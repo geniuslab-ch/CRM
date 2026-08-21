@@ -172,6 +172,7 @@ export interface SponsorOpportunity {
 export type ConversationCategory = "PLAYER" | "CLUB" | "SPONSOR" | "MEDIA";
 
 export type ConversationClassification =
+  | "AWAITING_REPLY"
   | "INTERESTED"
   | "NOT_INTERESTED"
   | "NEEDS_INFORMATION"

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 type Tone = "default" | "primary" | "accent" | "success" | "warning" | "danger" | "info" | "outline";
 
 const STATUS_TONE: Record<string, Tone> = {
+  AWAITING_REPLY: "info",
   IDENTIFIED: "outline",
   CONTACTED: "info",
   INTERESTED: "primary",

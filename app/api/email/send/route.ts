@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEmailProvider } from "@/lib/integrations/email";
+import { logConversation } from "@/lib/supabase/repository";
+import { ConversationCategory } from "@/types";
 
 export async function POST(req: NextRequest) {
-  let body: { to?: string; subject?: string; message?: string };
+  let body: {
+    to?: string;
+    subject?: string;
+    message?: string;
+    logAs?: { contactName: string; organization: string; category: ConversationCategory; relatedId?: string };
+  };
   try {
     body = await req.json();
   } catch {
@@ -16,6 +23,20 @@ export async function POST(req: NextRequest) {
   try {
     const provider = getEmailProvider();
     const result = await provider.send(body.to, body.subject, body.message);
+
+    // Only log a real send as a real conversation entry — a mock send
+    // (no email integration configured) never happened, so it shouldn't
+    // create a "real" activity record.
+    if (!result.mock && body.logAs) {
+      await logConversation({
+        contactName: body.logAs.contactName,
+        organization: body.logAs.organization,
+        category: body.logAs.category,
+        relatedId: body.logAs.relatedId,
+        message: body.message,
+      });
+    }
+
     return NextResponse.json(result);
   } catch (err) {
     console.error("Failed to send email:", err);

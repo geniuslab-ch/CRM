@@ -53,9 +53,24 @@ create table if not exists sponsors (
   created_at timestamptz not null default now()
 );
 
+-- Real activity log — one row per real outbound message actually sent
+-- through the Outreach Agent. No inbound replies yet (that needs a mailbox
+-- read/webhook integration, not built yet), so this starts as a sent log,
+-- not a full two-way inbox. Never seeded with fake conversations.
+create table if not exists conversations (
+  id text primary key,
+  contact_name text not null,
+  organization text not null,
+  category text not null,
+  related_id text,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+
 -- Lock every table down by default: only the service_role key (used
 -- server-side only, never shipped to the browser) can read or write.
 -- The anon key gets zero access unless you explicitly add a policy.
 alter table players enable row level security;
 alter table clubs enable row level security;
 alter table sponsors enable row level security;
+alter table conversations enable row level security;

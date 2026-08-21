@@ -7,6 +7,7 @@
 import { ConversationClassification } from "@/types";
 
 export const CLASSIFICATION_LABELS: Record<ConversationClassification, string> = {
+  AWAITING_REPLY: "Awaiting reply",
   INTERESTED: "Interested",
   NOT_INTERESTED: "Not interested",
   NEEDS_INFORMATION: "Needs information",
@@ -18,6 +19,7 @@ export const CLASSIFICATION_LABELS: Record<ConversationClassification, string> =
 };
 
 export const CLASSIFICATION_TONE: Record<ConversationClassification, "success" | "danger" | "warning" | "info"> = {
+  AWAITING_REPLY: "info",
   INTERESTED: "success",
   NOT_INTERESTED: "danger",
   NEEDS_INFORMATION: "info",

@@ -64,6 +64,12 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
           to: contactEmail,
           subject: `Panna League Switzerland x ${sponsor.name}`,
           message,
+          logAs: {
+            contactName: sponsor.research.contactPerson.name,
+            organization: sponsor.name,
+            category: "SPONSOR",
+            relatedId: sponsor.id,
+          },
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Send failed");

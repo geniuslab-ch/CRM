@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { Player, Club, Sponsor } from "@/types";
+import { Player, Club, Sponsor, Conversation, ConversationCategory } from "@/types";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
 // getSponsors() from here (never from lib/data/players.ts etc. directly)
@@ -155,5 +155,72 @@ export async function getSponsors(): Promise<LiveResult<Sponsor>> {
   } catch (err) {
     console.error("Supabase getSponsors failed:", err);
     return { data: [], source: "unavailable" };
+  }
+}
+
+function rowToConversation(row: any): Conversation {
+  return {
+    id: row.id,
+    contactName: row.contact_name,
+    organization: row.organization,
+    category: row.category,
+    relatedId: row.related_id,
+    messages: [{ id: `${row.id}-1`, from: "AI", text: row.message, timestamp: row.created_at }],
+    lastMessagePreview: row.message,
+    lastMessageAt: row.created_at,
+    // Real, not fabricated: this table only logs messages actually sent —
+    // there's no inbound-reply integration yet, so every row genuinely is
+    // still awaiting a reply. See README §18.
+    classification: "AWAITING_REPLY",
+    recommendedAction: "No reply yet — follow up if you don't hear back in a few days.",
+    aiDraftResponse: "",
+    unread: false,
+  };
+}
+
+// Real sent-message log — populated only when the Outreach Agent actually
+// sends an email (see /api/email/send). Never seeded with fake history.
+export async function getConversations(): Promise<LiveResult<Conversation>> {
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
+  try {
+    const { data, error } = await getSupabaseServerClient()
+      .from("conversations")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Supabase getConversations error:", error.message);
+      return { data: [], source: "unavailable" };
+    }
+    return { data: (data ?? []).map(rowToConversation), source: "live" };
+  } catch (err) {
+    console.error("Supabase getConversations failed:", err);
+    return { data: [], source: "unavailable" };
+  }
+}
+
+// Called after a real (non-mock) send succeeds. Best-effort: a logging
+// failure should never break the send the user just watched happen.
+export async function logConversation(entry: {
+  contactName: string;
+  organization: string;
+  category: ConversationCategory;
+  relatedId?: string;
+  message: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await getSupabaseServerClient()
+      .from("conversations")
+      .insert({
+        id: `conv-${crypto.randomUUID()}`,
+        contact_name: entry.contactName,
+        organization: entry.organization,
+        category: entry.category,
+        related_id: entry.relatedId ?? null,
+        message: entry.message,
+      });
+    if (error) console.error("Supabase logConversation error:", error.message);
+  } catch (err) {
+    console.error("Supabase logConversation failed:", err);
   }
 }

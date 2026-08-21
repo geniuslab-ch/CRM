@@ -10,6 +10,7 @@ const CLASSIFICATIONS: ConversationClassification[] = [
 ];
 
 const RECOMMENDED_ACTION: Record<ConversationClassification, string> = {
+  AWAITING_REPLY: "No reply yet — follow up if you don't hear back in a few days.",
   INTERESTED: "Move to next stage and propose a concrete next step.",
   NOT_INTERESTED: "Log as declined and archive — revisit next season.",
   NEEDS_INFORMATION: "Send sponsorship deck + propose a 15-minute call.",
@@ -21,6 +22,7 @@ const RECOMMENDED_ACTION: Record<ConversationClassification, string> = {
 };
 
 const THEM_MESSAGES: Record<ConversationClassification, string[]> = {
+  AWAITING_REPLY: [],
   INTERESTED: [
     "This looks great, we'd love to be involved.",
     "Sounds like a great fit for us, tell me more about next steps.",
@@ -56,6 +58,7 @@ const THEM_MESSAGES: Record<ConversationClassification, string[]> = {
 };
 
 const AI_DRAFTS: Record<ConversationClassification, string[]> = {
+  AWAITING_REPLY: [],
   INTERESTED: [
     "Fantastic to hear! I'll send over our partnership overview and grab time on your calendar this week.",
   ],

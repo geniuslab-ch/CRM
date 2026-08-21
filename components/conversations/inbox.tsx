@@ -109,47 +109,56 @@ export function Inbox({ conversations }: { conversations: Conversation[] }) {
                 <p className="mt-1 text-sm">{selected.recommendedAction}</p>
               </div>
 
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary">AI-generated response</p>
-                {editingId === selected.id ? (
-                  <textarea
-                    value={drafts[selected.id] ?? selected.aiDraftResponse}
-                    onChange={(e) => setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))}
-                    rows={4}
-                    className="focus-ring w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-                  />
-                ) : (
-                  <p className="text-sm">{drafts[selected.id] ?? selected.aiDraftResponse}</p>
-                )}
-              </div>
+              {selected.aiDraftResponse ? (
+                <>
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary">AI-generated response</p>
+                    {editingId === selected.id ? (
+                      <textarea
+                        value={drafts[selected.id] ?? selected.aiDraftResponse}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))}
+                        rows={4}
+                        className="focus-ring w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                      />
+                    ) : (
+                      <p className="text-sm">{drafts[selected.id] ?? selected.aiDraftResponse}</p>
+                    )}
+                  </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setEditingId((id) => (id === selected.id ? null : selected.id))}
-                >
-                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                  {editingId === selected.id ? "Done" : "EDIT"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={statusById[selected.id] === "approved" || statusById[selected.id] === "sent"}
-                  onClick={() => setStatusById((s) => ({ ...s, [selected.id]: "approved" }))}
-                >
-                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                  APPROVE
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={statusById[selected.id] === "sent"}
-                  onClick={() => setStatusById((s) => ({ ...s, [selected.id]: "sent" }))}
-                >
-                  <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                  {statusById[selected.id] === "sent" ? "SENT (mock)" : "SEND MOCK"}
-                </Button>
-              </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setEditingId((id) => (id === selected.id ? null : selected.id))}
+                    >
+                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                      {editingId === selected.id ? "Done" : "EDIT"}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={statusById[selected.id] === "approved" || statusById[selected.id] === "sent"}
+                      onClick={() => setStatusById((s) => ({ ...s, [selected.id]: "approved" }))}
+                    >
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      APPROVE
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={statusById[selected.id] === "sent"}
+                      onClick={() => setStatusById((s) => ({ ...s, [selected.id]: "sent" }))}
+                    >
+                      <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                      {statusById[selected.id] === "sent" ? "SENT (mock)" : "SEND MOCK"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  No reply yet — there&apos;s nothing to draft a response to. This inbox only shows real sent messages;
+                  connect a mailbox integration to see replies land here automatically.
+                </p>
+              )}
             </div>
           </Card>
         ) : (

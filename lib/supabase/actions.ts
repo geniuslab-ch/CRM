@@ -73,6 +73,18 @@ export async function addPlayer(_prevState: ActionResult, formData: FormData): P
   return { ok: true };
 }
 
+export async function updatePlayerStatus(id: string, status: string): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const { error } = await getSupabaseServerClient()
+    .from("players")
+    .update({ status, last_contact: status === "IDENTIFIED" ? null : new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/players");
+  return { ok: true };
+}
+
 export async function deletePlayer(id: string): Promise<ActionResult> {
   const guard = requireSupabase();
   if (guard) return guard;
@@ -111,6 +123,40 @@ export async function addClub(_prevState: ActionResult, formData: FormData): Pro
       engagement_type: "PLAYER_RECRUITMENT",
       ai_note: "Manually added by the organizer — queued for player recruitment outreach.",
     });
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/clubs");
+  return { ok: true };
+}
+
+export async function updateClub(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+
+  const id = str(formData, "id");
+  const name = str(formData, "name");
+  const city = str(formData, "city");
+  const contactName = str(formData, "contactName");
+  const contactEmail = str(formData, "contactEmail");
+  if (!id) return { ok: false, error: "Missing club id." };
+  if (!name || !city || !contactName || !contactEmail) {
+    return { ok: false, error: "Club name, city, contact name and contact email are required." };
+  }
+
+  const { error } = await getSupabaseServerClient()
+    .from("clubs")
+    .update({
+      name,
+      city,
+      contact_name: contactName,
+      contact_email: contactEmail,
+      website: str(formData, "website") || "",
+      players_identified: num(formData, "playersIdentified", 0),
+      status: str(formData, "status") || "IDENTIFIED",
+      potential: str(formData, "potential") || "MEDIUM",
+      engagement_type: str(formData, "engagementType") || "PLAYER_RECRUITMENT",
+    })
+    .eq("id", id);
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/clubs");
@@ -183,6 +229,59 @@ export async function addSponsor(_prevState: ActionResult, formData: FormData): 
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/sponsors");
+  return { ok: true };
+}
+
+export async function updateSponsor(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+
+  const id = str(formData, "id");
+  const name = str(formData, "name");
+  const category = str(formData, "category");
+  const city = str(formData, "city");
+  const contactName = str(formData, "contactName");
+  const contactEmail = str(formData, "contactEmail");
+  if (!id) return { ok: false, error: "Missing sponsor id." };
+  if (!name || !category || !city || !contactName || !contactEmail) {
+    return { ok: false, error: "Company name, category, city, contact name and contact email are required." };
+  }
+
+  const supabase = getSupabaseServerClient();
+  const { data: existing, error: fetchError } = await supabase
+    .from("sponsors")
+    .select("research")
+    .eq("id", id)
+    .single();
+  if (fetchError || !existing) return { ok: false, error: fetchError?.message ?? "Sponsor not found." };
+
+  const existingResearch = (existing.research ?? {}) as Record<string, unknown>;
+  const description = str(formData, "description");
+  const research = {
+    ...existingResearch,
+    ...(description ? { companyDescription: description } : {}),
+    contactPerson: {
+      name: contactName,
+      role: str(formData, "contactRole") || "Contact",
+      email: contactEmail,
+    },
+  };
+
+  const { error } = await supabase
+    .from("sponsors")
+    .update({
+      name,
+      category,
+      city,
+      potential_value: num(formData, "potentialValue", 0),
+      stage: str(formData, "stage") || "PROSPECT",
+      research,
+    })
+    .eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/sponsors");
+  revalidatePath(`/sponsors/${id}`);
   return { ok: true };
 }
 

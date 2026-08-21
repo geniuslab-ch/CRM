@@ -11,6 +11,7 @@ import { Club } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SWISS_CITIES } from "@/lib/data/seed";
 import { deleteClub } from "@/lib/supabase/actions";
+import { EditClubDialog } from "./edit-club-dialog";
 
 const STATUSES = ["ALL", "IDENTIFIED", "CONTACTED", "INTERESTED", "PLAYERS_PROPOSED", "CONFIRMED", "PARTNER"];
 const POTENTIALS = ["ALL", "LOW", "MEDIUM", "HIGH"];
@@ -135,14 +136,17 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(c.lastContact)}</td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleDelete(c.id, c.name)}
-                      disabled={pendingId === c.id}
-                      aria-label={`Remove ${c.name}`}
-                      className="focus-ring rounded-lg p-1.5 text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:opacity-50"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <EditClubDialog club={c} />
+                      <button
+                        onClick={() => handleDelete(c.id, c.name)}
+                        disabled={pendingId === c.id}
+                        aria-label={`Remove ${c.name}`}
+                        className="focus-ring rounded-lg p-1.5 text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

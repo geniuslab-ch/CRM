@@ -4,20 +4,21 @@ import { useMemo, useState, useTransition } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types";
 import { formatDate, formatNumber, initials } from "@/lib/utils";
 import { SWISS_CITIES } from "@/lib/data/seed";
-import { deletePlayer } from "@/lib/supabase/actions";
+import { deletePlayer, updatePlayerStatus } from "@/lib/supabase/actions";
 
 const STATUSES = ["ALL", "IDENTIFIED", "CONTACTED", "INTERESTED", "CONFIRMED", "DECLINED"];
+const EDITABLE_STATUSES = STATUSES.slice(1);
 
 export function PlayersTable({ players }: { players: Player[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [city, setCity] = useState("ALL");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
   const [, startTransition] = useTransition();
 
   function handleDelete(id: string, name: string) {
@@ -29,16 +30,24 @@ export function PlayersTable({ players }: { players: Player[] }) {
     });
   }
 
+  function handleStatusChange(id: string, newStatus: string) {
+    setStatusOverrides((prev) => ({ ...prev, [id]: newStatus }));
+    startTransition(async () => {
+      await updatePlayerStatus(id, newStatus);
+    });
+  }
+
   const filtered = useMemo(() => {
     return players.filter((p) => {
-      if (status !== "ALL" && p.status !== status) return false;
+      const effectiveStatus = statusOverrides[p.id] ?? p.status;
+      if (status !== "ALL" && effectiveStatus !== status) return false;
       if (city !== "ALL" && p.city !== city) return false;
       if (query && !p.name.toLowerCase().includes(query.toLowerCase()) && !(p.club ?? "").toLowerCase().includes(query.toLowerCase())) {
         return false;
       }
       return true;
     });
-  }, [players, query, status, city]);
+  }, [players, query, status, city, statusOverrides]);
 
   return (
     <div className="space-y-4">
@@ -116,7 +125,18 @@ export function PlayersTable({ players }: { players: Player[] }) {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatNumber(p.socialAudience)}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={p.status} />
+                    <select
+                      value={statusOverrides[p.id] ?? p.status}
+                      onChange={(e) => handleStatusChange(p.id, e.target.value)}
+                      aria-label={`Status for ${p.name}`}
+                      className="focus-ring rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs"
+                    >
+                      {EDITABLE_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(p.lastContact)}</td>
                   <td className="px-4 py-3 max-w-[220px] text-xs text-muted-foreground">{p.aiRecommendation}</td>

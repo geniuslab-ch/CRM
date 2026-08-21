@@ -10,7 +10,7 @@ import { formatCHF, timeAgo } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { deleteSponsor } from "@/lib/supabase/actions";
 
-const STAGES: { key: SponsorStage; label: string }[] = [
+export const STAGES: { key: SponsorStage; label: string }[] = [
   { key: "PROSPECT", label: "Prospect" },
   { key: "RESEARCH", label: "Research" },
   { key: "CONTACTED", label: "Contacted" },

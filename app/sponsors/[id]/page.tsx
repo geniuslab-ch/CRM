@@ -10,8 +10,8 @@ import { FitBar } from "@/components/sponsors/fit-bar";
 import { ProposalGenerator } from "@/components/sponsors/proposal-generator";
 import { OutreachComposer } from "@/components/sponsors/outreach-composer";
 import { DeleteSponsorButton } from "@/components/sponsors/delete-sponsor-button";
-import { getSponsors } from "@/lib/supabase/repository";
-import { conversations } from "@/lib/data/conversations";
+import { EditSponsorDialog } from "@/components/sponsors/edit-sponsor-dialog";
+import { getSponsors, getConversations } from "@/lib/supabase/repository";
 import { whyPannaLeague } from "@/lib/agents/sponsorResearcher";
 import { formatCHF, timeAgo } from "@/lib/utils";
 
@@ -21,11 +21,11 @@ import { formatCHF, timeAgo } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function SponsorDetailPage({ params }: { params: { id: string } }) {
-  const { data: sponsors, source } = await getSponsors();
+  const [{ data: sponsors, source }, { data: allConversations }] = await Promise.all([getSponsors(), getConversations()]);
   const sponsor = sponsors.find((s) => s.id === params.id);
   if (!sponsor) notFound();
 
-  const history = conversations.filter((c) => c.relatedId === sponsor.id);
+  const history = allConversations.filter((c) => c.relatedId === sponsor.id);
   const reasons = whyPannaLeague(sponsor);
 
   return (
@@ -37,6 +37,7 @@ export default async function SponsorDetailPage({ params }: { params: { id: stri
         </Link>
         <div className="flex items-center gap-2">
           <DataSourceBadge source={source} />
+          <EditSponsorDialog sponsor={sponsor} />
           <DeleteSponsorButton id={sponsor.id} name={sponsor.name} />
         </div>
       </div>
