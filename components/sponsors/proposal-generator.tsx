@@ -9,62 +9,50 @@ import { Sponsor, SponsorshipTier } from "@/types";
 import { generateProposalTier } from "@/lib/data/proposals";
 import { formatCHF } from "@/lib/utils";
 
-function buildProposalDocument(sponsor: Sponsor, tier: SponsorshipTier): string {
-  const lines = [
-    "PANNA LEAGUE SWITZERLAND",
-    "SPONSORSHIP PROPOSAL",
-    "",
-    `Prepared for: ${sponsor.name}`,
-    `Contact: ${sponsor.research.contactPerson.name} (${sponsor.research.contactPerson.role})`,
-    `Date: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`,
-    "",
-    "─".repeat(48),
-    tier.name.toUpperCase(),
-    tier.tagline,
-    "─".repeat(48),
-    "",
-    `Estimated package value: ${formatCHF(tier.estimatedValue)}`,
-    "",
-    "Benefits included:",
-    ...tier.benefits.map((b) => `  • ${b}`),
-    "",
-    "Why Panna League?",
-    sponsor.fitWhy,
-    "",
-    `Sponsor fit score: ${sponsor.fit.overall}/100`,
-    "",
-    "Next steps:",
-    "  1. Review this proposal internally",
-    "  2. Reply with questions or requested adjustments",
-    "  3. Confirm to lock in your activation slot",
-    "",
-    "Let's talk.",
-    "— Panna League Team",
-  ];
-  return lines.join("\n");
-}
-
-function downloadTextFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+async function downloadProposalPdf(sponsor: Sponsor, tier: SponsorshipTier) {
+  const res = await fetch("/api/proposal/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sponsor, tier }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "PDF generation failed");
+  const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = `${sponsor.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.pdf`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-export function ProposalGenerator({ sponsor }: { sponsor: Sponsor }) {
+interface ProposalGeneratorProps {
+  sponsor: Sponsor;
+  onTierChange?: (tier: SponsorshipTier | null) => void;
+}
+
+export function ProposalGenerator({ sponsor, onTierChange }: ProposalGeneratorProps) {
   const [generated, setGenerated] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState(false);
-  const [tier, setTier] = useState(() => generateProposalTier(sponsor));
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [tier, setTierState] = useState(() => generateProposalTier(sponsor));
+
+  function setTier(updater: (t: SponsorshipTier) => SponsorshipTier) {
+    setTierState((prev) => {
+      const next = updater(prev);
+      onTierChange?.(next);
+      return next;
+    });
+  }
 
   function generate() {
-    setTier(generateProposalTier(sponsor));
+    const next = generateProposalTier(sponsor);
+    setTierState(next);
+    onTierChange?.(next);
     setGenerated(true);
     setSaved(false);
     setExported(false);
@@ -82,10 +70,17 @@ export function ProposalGenerator({ sponsor }: { sponsor: Sponsor }) {
     setTier((t) => ({ ...t, benefits: [...t.benefits, "New benefit"] }));
   }
 
-  function handleExport() {
-    const filename = `${sponsor.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.txt`;
-    downloadTextFile(filename, buildProposalDocument(sponsor, tier));
-    setExported(true);
+  async function handleExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await downloadProposalPdf(sponsor, tier);
+      setExported(true);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Couldn't generate the PDF — please try again.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -162,16 +157,17 @@ export function ProposalGenerator({ sponsor }: { sponsor: Sponsor }) {
               <Button variant="secondary" size="sm" onClick={() => setSaved(true)} disabled={saved}>
                 {saved ? "Saved" : "SAVE"}
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExport}>
+              <Button variant="secondary" size="sm" onClick={handleExport} disabled={exporting}>
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                {exported ? "Downloaded — export again" : "EXPORT"}
+                {exporting ? "Generating PDF…" : exported ? "Downloaded — export again" : "EXPORT PDF"}
               </Button>
             </div>
-            {exported && (
+            {exported && !exportError && (
               <p className="text-xs text-muted-foreground">
-                Downloaded as a text file, ready to paste into an email or your own branded template.
+                Downloaded as a branded PDF — ready to send as-is or attach from the Outreach Agent below.
               </p>
             )}
+            {exportError && <p className="text-sm text-danger">{exportError}</p>}
           </div>
         )}
       </CardContent>

@@ -4,12 +4,12 @@ import { useState } from "react";
 import { ArrowDown, Check, Pencil, Send, Sparkles, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sponsor } from "@/types";
+import { Sponsor, SponsorshipTier } from "@/types";
 import { buildPersonalizationAngle } from "@/lib/agents/outreach";
 
 const PLACEHOLDER_EMAIL_HINT = /\.example\.[a-z]+$/i;
 
-export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
+export function OutreachComposer({ sponsor, proposalTier }: { sponsor: Sponsor; proposalTier: SponsorshipTier | null }) {
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generated" | "approved" | "sent">("idle");
   const [editing, setEditing] = useState(false);
@@ -19,6 +19,7 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
   const [sendError, setSendError] = useState<string | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
   const [sentVia, setSentVia] = useState<{ mock: boolean } | null>(null);
+  const [attachProposal, setAttachProposal] = useState(false);
 
   const contactEmail = sponsor.research.contactPerson.email;
   const isPlaceholderEmail = PLACEHOLDER_EMAIL_HINT.test(contactEmail);
@@ -70,6 +71,7 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
             category: "SPONSOR",
             relatedId: sponsor.id,
           },
+          ...(attachProposal && proposalTier ? { attachProposal: { sponsor, tier: proposalTier } } : {}),
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Send failed");
@@ -152,6 +154,18 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
               </div>
             )}
 
+            {proposalTier && status !== "sent" && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={attachProposal}
+                  onChange={(e) => setAttachProposal(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                Attach the generated sponsorship proposal as a PDF
+              </label>
+            )}
+
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setEditing((e) => !e)}>
                 <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
@@ -168,7 +182,15 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
               </Button>
               <Button size="sm" onClick={handleSend} disabled={sending || status === "sent"}>
                 <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                {status === "sent" ? (sentVia?.mock ? "SENT (mock — no email configured)" : "SENT") : sending ? "Sending…" : "SEND"}
+                {status === "sent"
+                  ? sentVia?.mock
+                    ? "SENT (mock — no email configured)"
+                    : attachProposal
+                    ? "SENT with proposal"
+                    : "SENT"
+                  : sending
+                  ? "Sending…"
+                  : "SEND"}
               </Button>
             </div>
             {sendError && <p className="text-sm text-danger">{sendError}</p>}

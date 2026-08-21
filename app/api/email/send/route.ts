@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEmailProvider } from "@/lib/integrations/email";
 import { logConversation } from "@/lib/supabase/repository";
-import { ConversationCategory } from "@/types";
+import { renderProposalPdf } from "@/lib/pdf/render";
+import { ConversationCategory, Sponsor, SponsorshipTier } from "@/types";
 
 export async function POST(req: NextRequest) {
   let body: {
@@ -9,6 +10,7 @@ export async function POST(req: NextRequest) {
     subject?: string;
     message?: string;
     logAs?: { contactName: string; organization: string; category: ConversationCategory; relatedId?: string };
+    attachProposal?: { sponsor: Sponsor; tier: SponsorshipTier };
   };
   try {
     body = await req.json();
@@ -22,7 +24,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const provider = getEmailProvider();
-    const result = await provider.send(body.to, body.subject, body.message);
+    const attachment = body.attachProposal
+      ? {
+          filename: `${body.attachProposal.sponsor.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.pdf`,
+          contentType: "application/pdf",
+          content: await renderProposalPdf(body.attachProposal.sponsor, body.attachProposal.tier),
+        }
+      : undefined;
+    const result = await provider.send(body.to, body.subject, body.message, attachment);
 
     // Only log a real send as a real conversation entry — a mock send
     // (no email integration configured) never happened, so it shouldn't

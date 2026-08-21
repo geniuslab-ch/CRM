@@ -7,8 +7,7 @@ import { ScoreRing } from "@/components/ui/score-ring";
 import { Why } from "@/components/ui/why";
 import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { FitBar } from "@/components/sponsors/fit-bar";
-import { ProposalGenerator } from "@/components/sponsors/proposal-generator";
-import { OutreachComposer } from "@/components/sponsors/outreach-composer";
+import { SponsorWorkspace } from "@/components/sponsors/sponsor-workspace";
 import { DeleteSponsorButton } from "@/components/sponsors/delete-sponsor-button";
 import { EditSponsorDialog } from "@/components/sponsors/edit-sponsor-dialog";
 import { getSponsors, getConversations } from "@/lib/supabase/repository";
@@ -141,8 +140,7 @@ export default async function SponsorDetailPage({ params }: { params: { id: stri
             </CardContent>
           </Card>
 
-          <ProposalGenerator sponsor={sponsor} />
-          <OutreachComposer sponsor={sponsor} />
+          <SponsorWorkspace sponsor={sponsor} />
         </div>
 
         <div className="space-y-6">

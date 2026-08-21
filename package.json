@@ -11,31 +11,32 @@
     "supabase:seed": "tsx scripts/seed-supabase.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@react-pdf/renderer": "^4.6.1",
+    "@supabase/supabase-js": "^2.112.3",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.3.24",
+    "googleapis": "^176.0.0",
+    "lucide-react": "^0.436.0",
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "lucide-react": "^0.436.0",
     "recharts": "^2.12.7",
-    "framer-motion": "^11.3.24",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.2",
-    "class-variance-authority": "^0.7.0",
-    "@anthropic-ai/sdk": "^0.120.0",
     "server-only": "^0.0.1",
-    "googleapis": "^176.0.0",
-    "@supabase/supabase-js": "^2.112.3"
+    "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {
-    "dotenv": "^16.4.5",
-    "tsx": "^4.23.12",
-    "typescript": "^5.5.4",
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "tailwindcss": "^3.4.9",
-    "postcss": "^8.4.41",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.35"
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.9",
+    "tsx": "^4.23.12",
+    "typescript": "^5.5.4"
   }
 }
