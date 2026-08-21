@@ -338,17 +338,3 @@ export interface AIMemoryEntry {
   value: string;
 }
 
-// ── AI Run simulation ────────────────────────────────────────
-
-export interface AIRunLogEntry {
-  timeSeconds: number;
-  agentId: AgentId | "system";
-  message: string;
-}
-
-export interface AIRunSummary {
-  newProspects: number;
-  qualifiedOpportunities: number;
-  meetingsBooked: number;
-  contentIdeas: number;
-}
