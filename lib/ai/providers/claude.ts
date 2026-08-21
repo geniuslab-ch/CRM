@@ -1,6 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { AIProvider, ClassificationResult, OutreachRequest, OutreachResult } from "../provider";
+import { AIProvider, ClassificationResult, ContentIdeaDraft, OutreachRequest, OutreachResult } from "../provider";
 import { brandVoice } from "@/lib/data/brand";
 
 // Real AI provider — wired to the Claude API via the Anthropic SDK.
@@ -128,22 +128,53 @@ export class ClaudeAIProvider implements AIProvider {
     };
   }
 
-  async generateContentIdea(trigger: string): Promise<string> {
+  async generateContentIdea(trigger: string): Promise<ContentIdeaDraft> {
     const system = [
       baseSystemPrompt(),
-      "You are the Content Agent. Given an event trigger, write one short content idea",
-      "(1-2 sentences: platform, hook, and format) ready to hand to the Content Command Center.",
+      "You are the Content Agent. Given an event trigger, produce one ready-to-publish content idea.",
+      'Respond with ONLY a JSON object, no markdown, in this exact shape: {"title": "...", "platform": "Instagram" | "TikTok" | "YouTube" | "LinkedIn", "hook": "...", "caption": "...", "cta": "...", "suggestedFootage": "...", "sponsorIntegration": "..." or null}',
+      "title is a short internal label. hook is the first line that stops the scroll. caption is the full post copy in the brand voice.",
+      "cta is a short call to action. suggestedFootage describes what to film/capture. sponsorIntegration names a natural sponsor tie-in if one fits, otherwise null.",
     ].join(" ");
 
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 300,
+      max_tokens: 600,
       output_config: { effort: "low" },
       system,
       messages: [{ role: "user", content: `Trigger: ${trigger}` }],
     });
 
-    return extractText(response).trim();
+    const raw = extractText(response);
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[0]);
+        if (typeof parsed.title === "string" && typeof parsed.caption === "string") {
+          return {
+            title: parsed.title,
+            platform: ["Instagram", "TikTok", "YouTube", "LinkedIn"].includes(parsed.platform) ? parsed.platform : "Instagram",
+            hook: typeof parsed.hook === "string" ? parsed.hook : "",
+            caption: parsed.caption,
+            cta: typeof parsed.cta === "string" ? parsed.cta : "",
+            suggestedFootage: typeof parsed.suggestedFootage === "string" ? parsed.suggestedFootage : "",
+            sponsorIntegration: typeof parsed.sponsorIntegration === "string" ? parsed.sponsorIntegration : null,
+          };
+        }
+      } catch {
+        // fall through to default below
+      }
+    }
+
+    return {
+      title: trigger,
+      platform: "Instagram",
+      hook: "",
+      caption: raw.trim() || "(Claude returned an empty response — try again.)",
+      cta: "",
+      suggestedFootage: "",
+      sponsorIntegration: null,
+    };
   }
 }
 

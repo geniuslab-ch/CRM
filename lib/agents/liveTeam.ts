@@ -1,7 +1,7 @@
 import "server-only";
 import { Agent } from "@/types";
 import { agents as staticAgents } from "@/lib/data/agents";
-import { getPlayers, getClubs, getSponsors, getConversations } from "@/lib/supabase/repository";
+import { getPlayers, getClubs, getSponsors, getConversations, getMeetings, getContentIdeas } from "@/lib/supabase/repository";
 
 // Real AI Team stats — used by the Dashboard panel, the Agents list and
 // agent detail pages. lib/data/agents.ts still supplies the illustrative,
@@ -13,11 +13,13 @@ import { getPlayers, getClubs, getSponsors, getConversations } from "@/lib/supab
 // there's nothing tracked instead.
 
 export async function getLiveAgents(): Promise<Agent[]> {
-  const [players, clubs, sponsors, conversations] = await Promise.all([
+  const [players, clubs, sponsors, conversations, meetings, contentIdeas] = await Promise.all([
     getPlayers(),
     getClubs(),
     getSponsors(),
     getConversations(),
+    getMeetings(),
+    getContentIdeas(),
   ]);
 
   const researchedSponsors = sponsors.data.filter((s) => s.stage !== "PROSPECT").length;
@@ -67,16 +69,16 @@ export async function getLiveAgents(): Promise<Agent[]> {
       metricValue: String(conversations.data.length),
     },
     booking: {
-      status: "IDLE",
-      headline: "Not tracked yet — no meetings data source connected",
+      status: meetings.data.length ? "ACTIVE" : "WAITING",
+      headline: `${meetings.data.length} meetings booked`,
       metricLabel: "Meetings booked",
-      metricValue: "—",
+      metricValue: String(meetings.data.length),
     },
     content: {
-      status: "IDLE",
-      headline: "Not tracked yet — no content pipeline connected",
+      status: contentIdeas.data.length ? "ACTIVE" : "WAITING",
+      headline: `${contentIdeas.data.length} content ideas`,
       metricLabel: "Content ideas",
-      metricValue: "—",
+      metricValue: String(contentIdeas.data.length),
     },
   };
 

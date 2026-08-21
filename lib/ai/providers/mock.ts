@@ -1,4 +1,4 @@
-import { AIProvider, ClassificationResult, OutreachRequest, OutreachResult } from "../provider";
+import { AIProvider, ClassificationResult, ContentIdeaDraft, OutreachRequest, OutreachResult } from "../provider";
 import { brandVoice } from "@/lib/data/brand";
 
 const OPENERS: Record<OutreachRequest["category"], string[]> = {
@@ -56,8 +56,16 @@ export class MockAIProvider implements AIProvider {
     return { classification: "INTERESTED", recommendedAction: "Move to next stage and propose a concrete next step.", confidence: 0.72 };
   }
 
-  async generateContentIdea(trigger: string): Promise<string> {
-    return `Content idea generated from: ${trigger}`;
+  async generateContentIdea(trigger: string): Promise<ContentIdeaDraft> {
+    return {
+      title: trigger,
+      platform: "Instagram",
+      hook: `This is why "${trigger}" matters.`,
+      caption: `Content idea generated from: ${trigger}. (Mock AI — set ANTHROPIC_API_KEY and NEXT_PUBLIC_AI_MODE=live for a real draft.)`,
+      cta: "Follow for more.",
+      suggestedFootage: "Relevant clip or photo from the event",
+      sponsorIntegration: null,
+    };
   }
 }
 

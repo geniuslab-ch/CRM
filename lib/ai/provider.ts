@@ -23,10 +23,20 @@ export interface ClassificationResult {
   confidence: number;
 }
 
+export interface ContentIdeaDraft {
+  title: string;
+  platform: "Instagram" | "TikTok" | "YouTube" | "LinkedIn";
+  hook: string;
+  caption: string;
+  cta: string;
+  suggestedFootage: string;
+  sponsorIntegration: string | null;
+}
+
 export interface AIProvider {
   readonly name: string;
   readonly isMock: boolean;
   generateOutreach(req: OutreachRequest): Promise<OutreachResult>;
   classifyReply(replyText: string): Promise<ClassificationResult>;
-  generateContentIdea(trigger: string): Promise<string>;
+  generateContentIdea(trigger: string): Promise<ContentIdeaDraft>;
 }

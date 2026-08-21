@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { Player, Club, Sponsor, Conversation, ConversationCategory } from "@/types";
+import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus } from "@/types";
 import { PlayerCandidate, ClubCandidate, SponsorCandidate } from "@/lib/agents/prospectResearch";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
@@ -227,6 +227,152 @@ export async function logConversation(entry: {
   } catch (err) {
     console.error("Supabase logConversation failed:", err);
   }
+}
+
+// ── Meetings ─────────────────────────────────────────────────
+// Real log — one row per meeting actually booked on the connected Google
+// Calendar via the Booking widget (see BookingWidget + /api/calendar/book).
+// Never written for a mock booking (no calendar connected).
+
+function rowToMeeting(row: any): Meeting {
+  const start = new Date(row.start_time);
+  const end = new Date(row.end_time);
+  return {
+    id: row.id,
+    withName: row.contact_name,
+    organization: row.organization,
+    category: row.category,
+    relatedId: row.related_id,
+    date: row.start_time,
+    time: start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+    durationMinutes: Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000)),
+    status: "CONFIRMED",
+    agenda: row.notes || `Panna League x ${row.organization}`,
+  };
+}
+
+export async function getMeetings(): Promise<LiveResult<Meeting>> {
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
+  try {
+    const { data, error } = await getSupabaseServerClient().from("meetings").select("*").order("start_time", { ascending: true });
+    if (error) {
+      console.error("Supabase getMeetings error:", error.message);
+      return { data: [], source: "unavailable" };
+    }
+    return { data: (data ?? []).map(rowToMeeting), source: "live" };
+  } catch (err) {
+    console.error("Supabase getMeetings failed:", err);
+    return { data: [], source: "unavailable" };
+  }
+}
+
+export async function logMeeting(entry: {
+  contactName: string;
+  organization: string;
+  category: ConversationCategory;
+  relatedId?: string;
+  startTime: string;
+  endTime: string;
+  notes?: string;
+  eventLink?: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await getSupabaseServerClient()
+      .from("meetings")
+      .insert({
+        id: `meeting-${crypto.randomUUID()}`,
+        contact_name: entry.contactName,
+        organization: entry.organization,
+        category: entry.category,
+        related_id: entry.relatedId ?? null,
+        start_time: entry.startTime,
+        end_time: entry.endTime,
+        notes: entry.notes ?? null,
+        event_link: entry.eventLink ?? null,
+      });
+    if (error) console.error("Supabase logMeeting error:", error.message);
+  } catch (err) {
+    console.error("Supabase logMeeting failed:", err);
+  }
+}
+
+// ── Content ideas ────────────────────────────────────────────
+// Real ideas the Content Agent (Claude) actually generated and the
+// organizer chose to save. Status/scheduling are edited manually;
+// performance stays null until entered manually — no social analytics
+// API is connected, so it's never fabricated.
+
+function rowToContentIdea(row: any): ContentOpportunity {
+  return {
+    id: row.id,
+    title: row.title,
+    platform: row.platform,
+    trigger: row.trigger,
+    hook: row.hook,
+    caption: row.caption,
+    cta: row.cta,
+    suggestedFootage: row.suggested_footage,
+    sponsorIntegration: row.sponsor_integration,
+    status: row.status,
+    scheduledDate: row.scheduled_date,
+    performance: row.performance,
+  };
+}
+
+export async function getContentIdeas(): Promise<LiveResult<ContentOpportunity>> {
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
+  try {
+    const { data, error } = await getSupabaseServerClient()
+      .from("content_ideas")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Supabase getContentIdeas error:", error.message);
+      return { data: [], source: "unavailable" };
+    }
+    return { data: (data ?? []).map(rowToContentIdea), source: "live" };
+  } catch (err) {
+    console.error("Supabase getContentIdeas failed:", err);
+    return { data: [], source: "unavailable" };
+  }
+}
+
+export async function createContentIdea(idea: Omit<ContentOpportunity, "id" | "status" | "scheduledDate" | "performance">): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const { error } = await getSupabaseServerClient()
+    .from("content_ideas")
+    .insert({
+      id: `content-${crypto.randomUUID()}`,
+      title: idea.title,
+      platform: idea.platform,
+      trigger: idea.trigger,
+      hook: idea.hook,
+      caption: idea.caption,
+      cta: idea.cta,
+      suggested_footage: idea.suggestedFootage,
+      sponsor_integration: idea.sponsorIntegration,
+      status: "IDEA",
+    });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function updateContentIdeaStatus(id: string, status: ContentStatus): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const { error } = await getSupabaseServerClient()
+    .from("content_ideas")
+    .update({ status, scheduled_date: status === "SCHEDULED" ? new Date().toISOString() : undefined })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function deleteContentIdea(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const { error } = await getSupabaseServerClient().from("content_ideas").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 // ── AI-sourced prospect inserts ─────────────────────────────

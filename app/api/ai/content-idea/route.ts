@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAIProvider } from "@/lib/ai";
 
-// Server-only route for the Content Agent. Not yet wired to a UI control
-// (content opportunities are precomputed in demo data), but available for
-// a future "Generate idea from trigger" action without any client-side key.
+// Server-only route for the Content Agent — called from the Content
+// Command Center's "Generate idea" control. Returns a structured draft;
+// the client can then save it via the createContentIdea server action.
 
 export async function POST(req: NextRequest) {
   let body: { trigger?: string };

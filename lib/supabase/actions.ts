@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
+import { createContentIdea, updateContentIdeaStatus, deleteContentIdea } from "./repository";
+import { ContentOpportunity, ContentStatus } from "@/types";
 
 // Server Actions for adding/removing real CRM records. These are the
 // write counterpart to lib/supabase/repository.ts's read-only
@@ -292,5 +294,34 @@ export async function deleteSponsor(id: string): Promise<ActionResult> {
   if (error) return { ok: false, error: error.message };
   revalidatePath("/sponsors");
   revalidatePath(`/sponsors/${id}`);
+  return { ok: true };
+}
+
+export async function saveContentIdea(
+  idea: Omit<ContentOpportunity, "id" | "status" | "scheduledDate" | "performance">
+): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const result = await createContentIdea(idea);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/content");
+  return { ok: true };
+}
+
+export async function setContentIdeaStatus(id: string, status: ContentStatus): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const result = await updateContentIdeaStatus(id, status);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/content");
+  return { ok: true };
+}
+
+export async function removeContentIdea(id: string): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const result = await deleteContentIdea(id);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/content");
   return { ok: true };
 }

@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCalendarProvider, CalendarSlot } from "@/lib/integrations/calendar";
+import { isGoogleConfigured } from "@/lib/integrations/google-client";
+import { logMeeting } from "@/lib/supabase/repository";
+import { ConversationCategory } from "@/types";
 
 export async function POST(req: NextRequest) {
-  let body: { slot?: CalendarSlot; withName?: string; notes?: string };
+  let body: {
+    slot?: CalendarSlot;
+    withName?: string;
+    notes?: string;
+    logAs?: { organization: string; category: ConversationCategory; relatedId?: string };
+  };
   try {
     body = await req.json();
   } catch {
@@ -16,9 +24,27 @@ export async function POST(req: NextRequest) {
   try {
     const provider = getCalendarProvider();
     const result = await provider.bookMeeting(body.slot, body.withName, body.notes);
-    return NextResponse.json(result);
+
+    // Only log a real booking — a mock confirmation (no calendar
+    // connected) never actually happened, so it shouldn't create a "real"
+    // meeting record.
+    if (isGoogleConfigured() && result.confirmed && body.logAs) {
+      await logMeeting({
+        contactName: body.withName,
+        organization: body.logAs.organization,
+        category: body.logAs.category,
+        relatedId: body.logAs.relatedId,
+        startTime: body.slot.startISO,
+        endTime: body.slot.endISO,
+        notes: body.notes,
+        eventLink: result.eventLink,
+      });
+    }
+
+    return NextResponse.json({ ...result, mock: !isGoogleConfigured() });
   } catch (err) {
     console.error("Failed to book meeting:", err);
-    return NextResponse.json({ error: "Failed to book meeting. Check server logs." }, { status: 502 });
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Failed to book meeting: ${detail}` }, { status: 502 });
   }
 }
