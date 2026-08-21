@@ -9,6 +9,7 @@ import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { FitBar } from "@/components/sponsors/fit-bar";
 import { ProposalGenerator } from "@/components/sponsors/proposal-generator";
 import { OutreachComposer } from "@/components/sponsors/outreach-composer";
+import { DeleteSponsorButton } from "@/components/sponsors/delete-sponsor-button";
 import { getSponsors } from "@/lib/supabase/repository";
 import { conversations } from "@/lib/data/conversations";
 import { whyPannaLeague } from "@/lib/agents/sponsorResearcher";
@@ -34,7 +35,10 @@ export default async function SponsorDetailPage({ params }: { params: { id: stri
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to Sponsor CRM
         </Link>
-        <DataSourceBadge source={source} />
+        <div className="flex items-center gap-2">
+          <DataSourceBadge source={source} />
+          <DeleteSponsorButton id={sponsor.id} name={sponsor.name} />
+        </div>
       </div>
 
       <Card className="p-6">

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Club } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SWISS_CITIES } from "@/lib/data/seed";
+import { deleteClub } from "@/lib/supabase/actions";
 
 const STATUSES = ["ALL", "IDENTIFIED", "CONTACTED", "INTERESTED", "PLAYERS_PROPOSED", "CONFIRMED", "PARTNER"];
 const POTENTIALS = ["ALL", "LOW", "MEDIUM", "HIGH"];
@@ -19,6 +20,17 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
   const [status, setStatus] = useState("ALL");
   const [city, setCity] = useState("ALL");
   const [potential, setPotential] = useState("ALL");
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  function handleDelete(id: string, name: string) {
+    if (!confirm(`Remove ${name} from the club database? This can't be undone.`)) return;
+    setPendingId(id);
+    startTransition(async () => {
+      await deleteClub(id);
+      setPendingId(null);
+    });
+  }
 
   const filtered = useMemo(() => {
     return clubs.filter((c) => {
@@ -84,6 +96,9 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Potential</th>
                 <th className="px-4 py-3 font-medium">Last contact</th>
+                <th className="px-4 py-3 font-medium">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -91,9 +106,11 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
                 <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-2/60">
                   <td className="px-4 py-3">
                     <p className="font-medium">{c.name}</p>
-                    <a href={c.website} className="text-xs text-muted-foreground hover:text-primary" target="_blank" rel="noreferrer">
-                      {c.website.replace("https://", "")}
-                    </a>
+                    {c.website && (
+                      <a href={c.website} className="text-xs text-muted-foreground hover:text-primary" target="_blank" rel="noreferrer">
+                        {c.website.replace("https://", "")}
+                      </a>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{c.city}</td>
                   <td className="px-4 py-3 text-muted-foreground">{c.playersIdentified}</td>
@@ -117,11 +134,21 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
                     <StatusBadge status={c.potential} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(c.lastContact)}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleDelete(c.id, c.name)}
+                      disabled={pendingId === c.id}
+                      aria-label={`Remove ${c.name}`}
+                      className="focus-ring rounded-lg p-1.5 text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     {clubs.length === 0
                       ? "No clubs in the database yet. The Club Finder agent will populate this as clubs are identified."
                       : "No clubs match your filters."}

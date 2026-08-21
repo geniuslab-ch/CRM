@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { PlayersTable } from "@/components/players/players-table";
 import { DataSourceBadge } from "@/components/ui/data-source-badge";
+import { AddPlayerDialog } from "@/components/players/add-player-dialog";
 import { getPlayers } from "@/lib/supabase/repository";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,12 @@ export default async function PlayersPage() {
       <PageHeader
         title="Player Database"
         description={`${players.length} scouted players across Switzerland — ${confirmed} confirmed for the roster. The Player Recruiter agent scores every candidate on technical ability, experience, street relevance, audience and local relevance.`}
-        action={<DataSourceBadge source={source} />}
+        action={
+          <div className="flex items-center gap-2">
+            <DataSourceBadge source={source} />
+            <AddPlayerDialog />
+          </div>
+        }
       />
       <PlayersTable players={players} />
     </div>

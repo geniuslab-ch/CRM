@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Player } from "@/types";
 import { formatDate, formatNumber, initials } from "@/lib/utils";
 import { SWISS_CITIES } from "@/lib/data/seed";
+import { deletePlayer } from "@/lib/supabase/actions";
 
 const STATUSES = ["ALL", "IDENTIFIED", "CONTACTED", "INTERESTED", "CONFIRMED", "DECLINED"];
 
@@ -16,6 +17,17 @@ export function PlayersTable({ players }: { players: Player[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [city, setCity] = useState("ALL");
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  function handleDelete(id: string, name: string) {
+    if (!confirm(`Remove ${name} from the player database? This can't be undone.`)) return;
+    setPendingId(id);
+    startTransition(async () => {
+      await deletePlayer(id);
+      setPendingId(null);
+    });
+  }
 
   const filtered = useMemo(() => {
     return players.filter((p) => {
@@ -76,6 +88,9 @@ export function PlayersTable({ players }: { players: Player[] }) {
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Last contact</th>
                 <th className="px-4 py-3 font-medium">AI recommendation</th>
+                <th className="px-4 py-3 font-medium">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -105,11 +120,21 @@ export function PlayersTable({ players }: { players: Player[] }) {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(p.lastContact)}</td>
                   <td className="px-4 py-3 max-w-[220px] text-xs text-muted-foreground">{p.aiRecommendation}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleDelete(p.id, p.name)}
+                      disabled={pendingId === p.id}
+                      aria-label={`Remove ${p.name}`}
+                      className="focus-ring rounded-lg p-1.5 text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     {players.length === 0
                       ? "No players in the database yet. The Player Recruiter agent will populate this as prospects are identified."
                       : "No players match your filters."}

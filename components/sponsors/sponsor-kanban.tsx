@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Sponsor, SponsorStage } from "@/types";
 import { formatCHF, timeAgo } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { deleteSponsor } from "@/lib/supabase/actions";
 
 const STAGES: { key: SponsorStage; label: string }[] = [
   { key: "PROSPECT", label: "Prospect" },
@@ -80,19 +81,43 @@ export function SponsorKanban({ sponsors }: { sponsors: Sponsor[] }) {
 }
 
 function SponsorCard({ sponsor }: { sponsor: Sponsor }) {
+  const [pending, setPending] = useState(false);
+  const [, startTransition] = useTransition();
+
+  function handleDelete(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Remove ${sponsor.name} from the sponsor CRM? This can't be undone.`)) return;
+    setPending(true);
+    startTransition(async () => {
+      await deleteSponsor(sponsor.id);
+      setPending(false);
+    });
+  }
+
   return (
     <Link href={`/sponsors/${sponsor.id}`}>
       <Card className="p-3.5 transition-colors hover:border-primary/50 hover:bg-surface-2">
         <div className="mb-2 flex items-start justify-between gap-2">
           <p className="text-sm font-semibold leading-tight">{sponsor.name}</p>
-          <span
-            className={cn(
-              "shrink-0 rounded-md px-1.5 py-0.5 text-xs font-bold",
-              sponsor.fit.overall >= 85 ? "bg-success/15 text-success" : sponsor.fit.overall >= 65 ? "bg-primary/15 text-primary" : "bg-warning/15 text-warning"
-            )}
-          >
-            {sponsor.fit.overall}
-          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <span
+              className={cn(
+                "rounded-md px-1.5 py-0.5 text-xs font-bold",
+                sponsor.fit.overall >= 85 ? "bg-success/15 text-success" : sponsor.fit.overall >= 65 ? "bg-primary/15 text-primary" : "bg-warning/15 text-warning"
+              )}
+            >
+              {sponsor.fit.overall}
+            </span>
+            <button
+              onClick={handleDelete}
+              disabled={pending}
+              aria-label={`Remove ${sponsor.name}`}
+              className="focus-ring rounded p-1 text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+            >
+              <Trash2 className="h-3 w-3" aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">{sponsor.category}</p>
         <div className="mt-2.5 flex items-center justify-between text-xs">
