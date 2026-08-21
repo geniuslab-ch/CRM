@@ -22,8 +22,8 @@ Panna League is a competitive 1v1 / small-sided street-football competition. The
 - **Player Database** — 50 scouted players, AI player score (technical, experience, street relevance, social audience, local relevance, competitive potential), status pipeline, search & filters.
 - **Club Database** — 20 clubs with a recruitment-first pipeline (`IDENTIFIED → CONTACTED → INTERESTED → PLAYERS_PROPOSED → CONFIRMED → PARTNER`), clearly separating player recruitment from commercial partnership.
 - **Sponsor CRM** — a 10-stage Kanban board (`PROSPECT → RESEARCH → CONTACTED → REPLIED → INTERESTED → MEETING → PROPOSAL → NEGOTIATION → WON/LOST`) across 50 sponsor prospects.
-- **Sponsor Detail Page** — sponsor fit score, full company research, "Why Panna League?", brand alignment breakdown, activation opportunities, a Commercial Opportunity Generator (proposal builder with edit/save/export), an Outreach Agent composer (research → personalization → message → approve/send), and communication history.
-- **Conversation Center** — a unified inbox across players, clubs, sponsors and media, with AI classification, recommended next action, and an editable AI-drafted reply (approve / edit / send-mock).
+- **Sponsor Detail Page** — sponsor fit score, full company research, "Why Panna League?", brand alignment breakdown, activation opportunities, a Commercial Opportunity Generator (proposal builder with edit/save and a **real** file export/download), an Outreach Agent composer (research → personalization → Claude-generated message → approve/edit/**real send via Gmail**), and communication history.
+- **Conversation Center** — a unified inbox across players, clubs, sponsors and media, with AI classification, recommended next action, and an editable AI-drafted reply (approve / edit / send-mock — this inbox isn't tied to a real mailbox yet, see §18 roadmap).
 - **Content Command Center** — content opportunities generated from event triggers (player wins, milestones, sponsor activations), a weekly content calendar, and performance stats.
 - **Analytics** — recruitment funnels (players, clubs, sponsors), content performance, and AI productivity per agent.
 - **Event Control Center** — event snapshot and an interactive launch-readiness checklist.
@@ -104,13 +104,15 @@ cp .env.example .env.local
 
 Key variable: `NEXT_PUBLIC_AI_MODE` — `mock` (default) or `live`.
 
+**Login gate:** the whole app sits behind a single shared Admin passcode (`middleware.ts` + `lib/auth.ts`), not the mock-mode toggle above — it's on regardless of AI mode. Set `APP_PASSCODE` (whatever passcode you want) and `APP_SESSION_SECRET` (any random string — signs the login session cookie) in `.env.local`; without both set, `/api/auth/login` returns an error and nobody can log in. Deploying this to a real host means setting these two variables there too, the same way as every other secret in this section — `.env.local` never leaves your machine/session.
+
 ## 8. Mock AI mode
 
 Every "AI" behavior in this prototype — scoring, research, reply classification, content ideation — runs through deterministic, seeded demo data (`lib/data/*`) or the `MockAIProvider` by default. This means:
 
 - The app looks and behaves identically for every visitor and every reload (great for demos).
 - Nothing calls an external API, so there is nothing to configure and nothing that can fail due to rate limits or missing keys.
-- Every "Send" action (outreach, conversation replies) is explicitly labeled **mock** in the UI — no real message is ever sent anywhere.
+- Mock mode still fully applies to the Conversation Center's reply composer and to any outreach sent while `ANTHROPIC_API_KEY`/`GOOGLE_REFRESH_TOKEN` aren't set. The Sponsor Detail page's Outreach Agent **SEND** button, however, is real once Gmail is configured (§12) — it dispatches an actual email via `/api/email/send`, not a simulation. Watch for the placeholder-email warning it shows before sending to seed/demo contacts.
 
 ## 9. Real AI mode (Claude API) — already wired up
 
@@ -131,7 +133,7 @@ Every "AI" behavior in this prototype — scoring, research, reply classificatio
 ## 10. Real AI integration roadmap — what's left
 
 1. ~~Implement `ClaudeAIProvider`~~ — done (`lib/ai/providers/claude.ts`, see §9).
-2. Replace the static generators in `lib/data/*` with a real database behind the same TypeScript types in `types/index.ts` — the UI never needs to change. See §11 below for a concrete plan.
+2. ~~Replace the static generators with a real database~~ — done for players/clubs/sponsors, see §11. Extending the same pattern to Conversations, Content and derived Dashboard/Agents/Analytics stats is still open (see §18).
 3. Implement the integration interfaces already stubbed in `lib/integrations/`:
    - ~~`calendar.ts` → Google Calendar~~ — done, see §12.
    - ~~`email.ts` → Gmail API~~ — done, see §12.
@@ -141,34 +143,19 @@ Every "AI" behavior in this prototype — scoring, research, reply classificatio
 4. Add authentication and persistence (the prototype is stateless/in-memory by design).
 5. Wire the Analytics page to real event tracking instead of derived demo numbers.
 
-## 11. Adding a real database (players, clubs, sponsors)
+## 11. Real database (players, clubs, sponsors) — already wired up, no fallback
 
-The app currently generates `Player[]`, `Club[]`, `Sponsor[]` in memory (`lib/data/players.ts`, `clubs.ts`, `sponsors.ts`) using the types in `types/index.ts`. To persist real data:
+The Player Database, Club Database and Sponsor CRM (+ detail page) read **exclusively** from Supabase via `lib/supabase/repository.ts` (`getPlayers()` / `getClubs()` / `getSponsors()`). There is no demo-data fallback here on purpose — if Supabase is unconfigured, unreachable, or a table is empty, the page shows an honest empty state ("No players in the database yet…"), never fabricated records. A **Live database** / **Database unavailable** badge on each page makes the current state obvious at a glance.
 
-1. **Pick a free-tier Postgres host** — [Neon](https://neon.tech) or [Supabase](https://supabase.com) both have a free tier that's plenty for this app's scale (tens of thousands of rows). Supabase additionally gives you a hosted auth system and a browsable table UI if you want that later.
-2. **Add [Prisma](https://www.prisma.io) as the ORM** (`npm install prisma @prisma/client`, `npx prisma init`). Define models that mirror the existing types, e.g.:
-   ```prisma
-   model Player {
-     id             String   @id @default(cuid())
-     name           String
-     age            Int
-     city           String
-     club           String?
-     position       String
-     playerScore    Int
-     socialAudience Int
-     status         String
-     lastContact    DateTime?
-     aiRecommendation String
-     aiWhy          String
-   }
-   ```
-   (Do the same for `Club` and `Sponsor`, matching `types/index.ts`.)
-3. **Point `DATABASE_URL`** (add this var to `.env.local`) at the free-tier connection string, run `npx prisma migrate dev` to create the tables, optionally `npx prisma db seed` using the existing generators in `lib/data/*` as seed data.
-4. **Swap the data layer, not the UI**: replace the exported arrays in `lib/data/players.ts` etc. with async functions backed by `prisma.player.findMany()` and convert the pages that import them (`app/players/page.tsx`, `app/clubs/page.tsx`, `app/sponsors/page.tsx`, `app/sponsors/[id]/page.tsx`) to `async function Page()` components that `await` the query — Next.js Server Components support this natively, no client-side data-fetching needed.
-5. Add write actions (confirm a player, move a sponsor stage, log a contact) as [Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations) that call `prisma.<model>.update(...)`.
+To activate:
 
-This is a few hours of focused work, not a rebuild — the types and every page/component already assume this exact shape.
+1. Paste `lib/supabase/schema.sql` into your Supabase project's **SQL Editor** and run it once — creates `players`, `clubs`, `sponsors` with Row Level Security locked to the `service_role` key (the `anon` key gets zero access by default).
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` (from Supabase → Settings → API).
+3. Populate the tables either by running `npm run supabase:seed` (uses `lib/data/*`'s generators as seed content — handy for a first demo-quality dataset) or `npx tsx scripts/export-csv.ts` + Supabase Table Editor's **Import data from CSV**, then start replacing rows with real players/clubs/sponsors as you recruit them.
+
+`lib/data/players.ts` / `clubs.ts` / `sponsors.ts` still exist — they're the seed-data generators referenced above, and a few dashboard/analytics widgets that haven't been converted to live data yet still use them (see §18) — but the repository layer that the CRM pages actually read from never imports them.
+
+**Writes** (confirming a player, moving a sponsor stage, editing a club) aren't wired yet — today, edit data directly in Supabase's Table Editor. Adding write actions from the UI is a natural next step: [Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations) calling `supabase.from(table).update(...)` from `lib/supabase/repository.ts`.
 
 ## 12. Real Calendar & Gmail (Google) — already wired up
 
@@ -253,11 +240,12 @@ git push -u origin main
 ## 18. Future roadmap
 
 1. ~~Connect a real Claude API key and implement `ClaudeAIProvider`~~ — done, see §9.
-2. Persist data in a real database (§11) and add authentication for multi-organizer use.
-3. ~~Wire real calendar and email integrations~~ — done, see §12. Wire a UI control (Booking Agent "confirm meeting" button, Outreach "send real email") to call the now-working `/api/calendar/*` and `/api/email/send` routes.
-4. Connect social publishing APIs (§14) so the Content Agent can schedule and publish directly.
-5. Add real-time analytics ingestion so the Analytics page reflects live event and campaign performance.
+2. ~~Persist data in a real database~~ — done for players/clubs/sponsors, see §11. Still open: multi-organizer authentication (today it's one shared Admin passcode, see §7) and write actions from the UI (edit a player/club/sponsor without opening Supabase directly).
+3. ~~Wire real calendar and email integrations~~ — done, see §12. The Outreach Agent's **SEND** button uses this for real (§9); the Booking Agent's "confirm meeting" UI and the Conversation Center's reply composer still need to be wired to `/api/calendar/book` and `/api/email/send` the same way.
+4. Extend the live-data pattern (§11) from players/clubs/sponsors to Conversations, Content, Meetings and the Dashboard/Agents/Analytics stats that are still derived from `lib/data/*`'s demo generators — this needs new Supabase tables (conversations, content, meetings, agent activity) plus real usage over time before those pages stop being illustrative.
+5. Connect social publishing APIs (§14) so the Content Agent can schedule and publish directly.
+6. Add real-time analytics ingestion so the Analytics page reflects live event and campaign performance.
 
 ---
 
-Built as a functional, demo-ready prototype — every page, table, board and agent described in the product brief is implemented and populated with realistic Swiss demo data.
+Player, Club and Sponsor CRM data is live from Supabase with no demo fallback (§11). Claude outreach generation (§9), Google Calendar availability, and Gmail sending (§12) are live. The Dashboard, AI Team, Conversation Center, Content Command Center and Analytics pages still illustrate the product using the bundled demo dataset — see §18 for what's needed to make those live too.

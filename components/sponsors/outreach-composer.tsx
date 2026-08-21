@@ -1,19 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDown, Check, Pencil, Send, Sparkles } from "lucide-react";
+import { ArrowDown, Check, Pencil, Send, Sparkles, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sponsor } from "@/types";
 import { buildPersonalizationAngle } from "@/lib/agents/outreach";
+
+const PLACEHOLDER_EMAIL_HINT = /\.example\.[a-z]+$/i;
 
 export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generated" | "approved" | "sent">("idle");
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
+  const [sentVia, setSentVia] = useState<{ mock: boolean } | null>(null);
+
+  const contactEmail = sponsor.research.contactPerson.email;
+  const isPlaceholderEmail = PLACEHOLDER_EMAIL_HINT.test(contactEmail);
 
   async function generate() {
     setLoading(true);
@@ -41,6 +49,31 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
       setError("Couldn't generate outreach right now. Please try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSend() {
+    if (!message) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: contactEmail,
+          subject: `Panna League Switzerland x ${sponsor.name}`,
+          message,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Send failed");
+      const result = await res.json();
+      setSentVia({ mock: result.mock });
+      setStatus("sent");
+    } catch {
+      setSendError("Couldn't send — check the email integration is configured and try again.");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -101,6 +134,18 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
               )}
             </div>
 
+            <p className="text-xs text-muted-foreground">
+              Will send to <span className="font-medium text-foreground">{contactEmail}</span>
+            </p>
+            {isPlaceholderEmail && status !== "sent" && (
+              <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                This looks like a placeholder contact address — sending will dispatch a real email from your connected
+                account, but it will likely bounce. Update the sponsor&apos;s contact email with a real one before sending
+                for real.
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setEditing((e) => !e)}>
                 <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
@@ -115,11 +160,12 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
                 <Check className="h-3.5 w-3.5" aria-hidden="true" />
                 APPROVE
               </Button>
-              <Button size="sm" onClick={() => setStatus("sent")} disabled={status === "sent"}>
+              <Button size="sm" onClick={handleSend} disabled={sending || status === "sent"}>
                 <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                {status === "sent" ? "SENT (mock)" : "SEND — MOCK"}
+                {status === "sent" ? (sentVia?.mock ? "SENT (mock — no email configured)" : "SENT") : sending ? "Sending…" : "SEND"}
               </Button>
             </div>
+            {sendError && <p className="text-sm text-danger">{sendError}</p>}
           </div>
         )}
       </CardContent>

@@ -122,7 +122,9 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                    No clubs match your filters.
+                    {clubs.length === 0
+                      ? "No clubs in the database yet. The Club Finder agent will populate this as clubs are identified."
+                      : "No clubs match your filters."}
                   </td>
                 </tr>
               )}

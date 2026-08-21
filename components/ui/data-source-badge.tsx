@@ -1,7 +1,8 @@
-import { Database, FlaskConical } from "lucide-react";
+import { Database, AlertTriangle } from "lucide-react";
 import { Badge } from "./badge";
+import { DataStatus } from "@/lib/supabase/repository";
 
-export function DataSourceBadge({ source }: { source: "live" | "demo" }) {
+export function DataSourceBadge({ source }: { source: DataStatus }) {
   if (source === "live") {
     return (
       <Badge variant="success">
@@ -11,9 +12,9 @@ export function DataSourceBadge({ source }: { source: "live" | "demo" }) {
     );
   }
   return (
-    <Badge variant="outline">
-      <FlaskConical className="h-3 w-3" aria-hidden="true" />
-      Demo data
+    <Badge variant="warning">
+      <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+      Database unavailable
     </Badge>
   );
 }

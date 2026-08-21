@@ -110,7 +110,9 @@ export function PlayersTable({ players }: { players: Player[] }) {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                    No players match your filters.
+                    {players.length === 0
+                      ? "No players in the database yet. The Player Recruiter agent will populate this as prospects are identified."
+                      : "No players match your filters."}
                   </td>
                 </tr>
               )}

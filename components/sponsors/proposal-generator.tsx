@@ -5,9 +5,56 @@ import { Sparkles, Check, Download, Plus, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sponsor } from "@/types";
+import { Sponsor, SponsorshipTier } from "@/types";
 import { generateProposalTier } from "@/lib/data/proposals";
 import { formatCHF } from "@/lib/utils";
+
+function buildProposalDocument(sponsor: Sponsor, tier: SponsorshipTier): string {
+  const lines = [
+    "PANNA LEAGUE SWITZERLAND",
+    "SPONSORSHIP PROPOSAL",
+    "",
+    `Prepared for: ${sponsor.name}`,
+    `Contact: ${sponsor.research.contactPerson.name} (${sponsor.research.contactPerson.role})`,
+    `Date: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`,
+    "",
+    "─".repeat(48),
+    tier.name.toUpperCase(),
+    tier.tagline,
+    "─".repeat(48),
+    "",
+    `Estimated package value: ${formatCHF(tier.estimatedValue)}`,
+    "",
+    "Benefits included:",
+    ...tier.benefits.map((b) => `  • ${b}`),
+    "",
+    "Why Panna League?",
+    sponsor.fitWhy,
+    "",
+    `Sponsor fit score: ${sponsor.fit.overall}/100`,
+    "",
+    "Next steps:",
+    "  1. Review this proposal internally",
+    "  2. Reply with questions or requested adjustments",
+    "  3. Confirm to lock in your activation slot",
+    "",
+    "Let's talk.",
+    "— Panna League Team",
+  ];
+  return lines.join("\n");
+}
+
+function downloadTextFile(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export function ProposalGenerator({ sponsor }: { sponsor: Sponsor }) {
   const [generated, setGenerated] = useState(false);
@@ -33,6 +80,12 @@ export function ProposalGenerator({ sponsor }: { sponsor: Sponsor }) {
 
   function addBenefit() {
     setTier((t) => ({ ...t, benefits: [...t.benefits, "New benefit"] }));
+  }
+
+  function handleExport() {
+    const filename = `${sponsor.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.txt`;
+    downloadTextFile(filename, buildProposalDocument(sponsor, tier));
+    setExported(true);
   }
 
   return (
@@ -106,22 +159,17 @@ export function ProposalGenerator({ sponsor }: { sponsor: Sponsor }) {
               <Button variant="secondary" size="sm" onClick={() => setEditing((e) => !e)}>
                 {editing ? "Done editing" : "EDIT"}
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSaved(true)}
-                disabled={saved}
-              >
+              <Button variant="secondary" size="sm" onClick={() => setSaved(true)} disabled={saved}>
                 {saved ? "Saved" : "SAVE"}
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => setExported(true)}>
+              <Button variant="secondary" size="sm" onClick={handleExport}>
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                {exported ? "Exported (mock)" : "EXPORT"}
+                {exported ? "Downloaded — export again" : "EXPORT"}
               </Button>
             </div>
             {exported && (
               <p className="text-xs text-muted-foreground">
-                Mock export complete — in production this generates a branded PDF via a document-generation integration.
+                Downloaded as a text file, ready to paste into an email or your own branded template.
               </p>
             )}
           </div>

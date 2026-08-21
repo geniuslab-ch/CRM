@@ -1,27 +1,26 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { players as demoPlayers } from "@/lib/data/players";
-import { clubs as demoClubs } from "@/lib/data/clubs";
-import { sponsors as demoSponsors } from "@/lib/data/sponsors";
 import { Player, Club, Sponsor } from "@/types";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
 // getSponsors() from here (never from lib/data/players.ts etc. directly)
-// to read from Supabase. Falls back to the bundled demo data whenever
-// Supabase isn't configured, unreachable, or the table is empty, so a
-// page never breaks regardless of database state.
+// to read from Supabase. This is the single source of truth for the
+// Player Database, Club Database and Sponsor CRM: no fabricated demo
+// records are ever shown here. If Supabase isn't configured, unreachable,
+// or a table is empty, the result is an empty list, not fake data.
 //
 // IMPORTANT: this file (and lib/supabase/client.ts) must only ever be
 // imported from Server Components, Route Handlers or scripts — never from
 // a "use client" component. lib/data/players.ts / clubs.ts / sponsors.ts
-// stay plain and dependency-free on purpose: several client components
-// (analytics charts, demo mode) import derived data that traces back to
-// those files, and pulling Supabase into that chain would break the
-// client bundle.
+// still exist (used to seed Supabase and by a few unrelated demo-only
+// dashboard/analytics widgets — see README), but this file deliberately
+// does not import them.
+
+export type DataStatus = "live" | "unavailable";
 
 export interface LiveResult<T> {
   data: T[];
-  source: "live" | "demo";
+  source: DataStatus;
 }
 
 function rowToPlayer(row: any): Player {
@@ -79,49 +78,49 @@ function rowToSponsor(row: any): Sponsor {
 }
 
 export async function getPlayers(): Promise<LiveResult<Player>> {
-  if (!isSupabaseConfigured()) return { data: demoPlayers, source: "demo" };
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
   try {
-    const { data, error } = await getSupabaseServerClient().from("players").select("*");
+    const { data, error } = await getSupabaseServerClient().from("players").select("*").order("player_score", { ascending: false });
     if (error) {
-      console.error("Supabase getPlayers returned an error, falling back to demo data:", error.message);
-      return { data: demoPlayers, source: "demo" };
+      console.error("Supabase getPlayers error:", error.message);
+      return { data: [], source: "unavailable" };
     }
-    if (!data || data.length === 0) return { data: demoPlayers, source: "demo" };
-    return { data: data.map(rowToPlayer), source: "live" };
+    return { data: (data ?? []).map(rowToPlayer), source: "live" };
   } catch (err) {
-    console.error("Supabase getPlayers failed, falling back to demo data:", err);
-    return { data: demoPlayers, source: "demo" };
+    console.error("Supabase getPlayers failed:", err);
+    return { data: [], source: "unavailable" };
   }
 }
 
 export async function getClubs(): Promise<LiveResult<Club>> {
-  if (!isSupabaseConfigured()) return { data: demoClubs, source: "demo" };
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
   try {
-    const { data, error } = await getSupabaseServerClient().from("clubs").select("*");
+    const { data, error } = await getSupabaseServerClient().from("clubs").select("*").order("name", { ascending: true });
     if (error) {
-      console.error("Supabase getClubs returned an error, falling back to demo data:", error.message);
-      return { data: demoClubs, source: "demo" };
+      console.error("Supabase getClubs error:", error.message);
+      return { data: [], source: "unavailable" };
     }
-    if (!data || data.length === 0) return { data: demoClubs, source: "demo" };
-    return { data: data.map(rowToClub), source: "live" };
+    return { data: (data ?? []).map(rowToClub), source: "live" };
   } catch (err) {
-    console.error("Supabase getClubs failed, falling back to demo data:", err);
-    return { data: demoClubs, source: "demo" };
+    console.error("Supabase getClubs failed:", err);
+    return { data: [], source: "unavailable" };
   }
 }
 
 export async function getSponsors(): Promise<LiveResult<Sponsor>> {
-  if (!isSupabaseConfigured()) return { data: demoSponsors, source: "demo" };
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
   try {
-    const { data, error } = await getSupabaseServerClient().from("sponsors").select("*");
+    const { data, error } = await getSupabaseServerClient()
+      .from("sponsors")
+      .select("*")
+      .order("potential_value", { ascending: false });
     if (error) {
-      console.error("Supabase getSponsors returned an error, falling back to demo data:", error.message);
-      return { data: demoSponsors, source: "demo" };
+      console.error("Supabase getSponsors error:", error.message);
+      return { data: [], source: "unavailable" };
     }
-    if (!data || data.length === 0) return { data: demoSponsors, source: "demo" };
-    return { data: data.map(rowToSponsor), source: "live" };
+    return { data: (data ?? []).map(rowToSponsor), source: "live" };
   } catch (err) {
-    console.error("Supabase getSponsors failed, falling back to demo data:", err);
-    return { data: demoSponsors, source: "demo" };
+    console.error("Supabase getSponsors failed:", err);
+    return { data: [], source: "unavailable" };
   }
 }

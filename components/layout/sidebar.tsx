@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 export function Sidebar() {
   const pathname = usePathname();
+  // NEXT_PUBLIC_ vars are inlined at build time, safe to read client-side.
+  const aiLive = process.env.NEXT_PUBLIC_AI_MODE === "live";
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-surface lg:flex">
@@ -45,9 +47,12 @@ export function Sidebar() {
 
       <div className="border-t border-border p-4">
         <div className="rounded-xl border border-border bg-surface-2 p-3">
-          <p className="text-xs font-semibold">Mock AI Mode</p>
+          <p className="flex items-center gap-1.5 text-xs font-semibold">
+            <span className={cn("h-1.5 w-1.5 rounded-full", aiLive ? "bg-success" : "bg-muted-foreground")} aria-hidden="true" />
+            Claude AI — {aiLive ? "Live" : "Mock mode"}
+          </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Running on realistic demo data. No API keys required.
+            Player, club and sponsor data reads from Supabase in real time.
           </p>
         </div>
       </div>
