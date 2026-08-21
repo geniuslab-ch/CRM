@@ -261,7 +261,74 @@ export async function researchSponsors(existingNames: string[], count = 3): Prom
   }).filter((c) => c.name);
 }
 
+export interface SponsorProfileUpdate {
+  companyDescription: string;
+  swissPresence: string;
+  targetAudience: string;
+  recentMarketingActivity: string;
+  existingSponsorships: string;
+  reasonToSponsor: string;
+  activationOpportunities: string[];
+  suggestedPackage: string;
+  aiRecommendation: string;
+  sources: string[];
+}
+
+// The Researcher agent — a deep-dive on ONE already-tracked sponsor
+// (unlike researchSponsors above, which discovers new ones). Used by the
+// "Research this company" button on the sponsor detail page.
+export async function researchSponsorProfile(sponsor: { name: string; city: string; category: string }): Promise<SponsorProfileUpdate> {
+  const system = [
+    "You are the Researcher agent for Panna League Switzerland. Use the web_search tool to build a deep, genuinely",
+    `researched company brief for ${sponsor.name} (${sponsor.category}, based in or active around ${sponsor.city}, Switzerland).`,
+    "Search their official site, recent news, marketing campaigns, sponsorships and anything showing real current",
+    "relevance to a street-football / youth-culture sponsorship pitch. Be specific and cite what you find — never",
+    "invent a fact you can't point to a source for. If you can't verify something, say so plainly rather than guessing.",
+  ].join(" ");
+
+  const user = [
+    "Return ONLY a JSON object (no markdown fences, no other text), shaped:",
+    `{"companyDescription": string, "swissPresence": string, "targetAudience": string,`,
+    `"recentMarketingActivity": string (must cite something you actually found), "existingSponsorships": string,`,
+    `"reasonToSponsor": string, "activationOpportunities": string[3], "suggestedPackage": string,`,
+    `"aiRecommendation": string (one sentence), "sources": string[] (the URLs you found this from)}`,
+  ].join(" ");
+
+  const response = await client().messages.create({
+    model: model(),
+    max_tokens: 14000,
+    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
+    system,
+    messages: [{ role: "user", content: user }],
+  });
+
+  const raw = extractJsonObject(extractText(response));
+  return {
+    companyDescription: str(raw, "companyDescription"),
+    swissPresence: str(raw, "swissPresence"),
+    targetAudience: str(raw, "targetAudience"),
+    recentMarketingActivity: str(raw, "recentMarketingActivity"),
+    existingSponsorships: str(raw, "existingSponsorships"),
+    reasonToSponsor: str(raw, "reasonToSponsor"),
+    activationOpportunities: strArray(raw, "activationOpportunities"),
+    suggestedPackage: str(raw, "suggestedPackage") || "TBD",
+    aiRecommendation: str(raw, "aiRecommendation") || "Researched via AI web search — review before contacting.",
+    sources: strArray(raw, "sources"),
+  };
+}
+
 // ── small untyped-JSON helpers ──────────────────────────────
+
+function extractJsonObject(text: string): unknown {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end < start) return {};
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return {};
+  }
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;

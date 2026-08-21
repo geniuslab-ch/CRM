@@ -269,6 +269,8 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
     },
   };
 
+  const fitWhy = str(formData, "fitWhy");
+
   const { error } = await supabase
     .from("sponsors")
     .update({
@@ -278,6 +280,7 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
       potential_value: num(formData, "potentialValue", 0),
       stage: str(formData, "stage") || "PROSPECT",
       research,
+      ...(fitWhy ? { fit_why: fitWhy } : {}),
     })
     .eq("id", id);
 

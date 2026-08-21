@@ -10,6 +10,7 @@ import { FitBar } from "@/components/sponsors/fit-bar";
 import { SponsorWorkspace } from "@/components/sponsors/sponsor-workspace";
 import { DeleteSponsorButton } from "@/components/sponsors/delete-sponsor-button";
 import { EditSponsorDialog } from "@/components/sponsors/edit-sponsor-dialog";
+import { ResearchButton } from "@/components/sponsors/research-button";
 import { getSponsors, getConversations } from "@/lib/supabase/repository";
 import { whyPannaLeague } from "@/lib/agents/sponsorResearcher";
 import { formatCHF, timeAgo } from "@/lib/utils";
@@ -69,8 +70,9 @@ export default async function SponsorDetailPage({ params }: { params: { id: stri
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Company information</CardTitle>
+              <ResearchButton sponsorId={sponsor.id} />
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>{sponsor.research.companyDescription}</p>

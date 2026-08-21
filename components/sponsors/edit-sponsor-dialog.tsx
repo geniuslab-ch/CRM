@@ -123,6 +123,12 @@ export function EditSponsorDialog({ sponsor }: { sponsor: Sponsor }) {
             </label>
             <Textarea id="ed-description" name="description" rows={3} defaultValue={sponsor.research.companyDescription} />
           </div>
+          <div>
+            <label htmlFor="ed-fit-why" className="mb-1 block text-xs font-medium text-muted-foreground">
+              &ldquo;Why Panna League&rdquo; pitch (shown to the sponsor — PDF &amp; outreach)
+            </label>
+            <Textarea id="ed-fit-why" name="fitWhy" rows={3} defaultValue={sponsor.fitWhy} />
+          </div>
           {state.error && <p className="text-sm text-danger">{state.error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>

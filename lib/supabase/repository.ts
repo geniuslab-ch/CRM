@@ -1,7 +1,7 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
 import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus } from "@/types";
-import { PlayerCandidate, ClubCandidate, SponsorCandidate } from "@/lib/agents/prospectResearch";
+import { PlayerCandidate, ClubCandidate, SponsorCandidate, SponsorProfileUpdate } from "@/lib/agents/prospectResearch";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
 // getSponsors() from here (never from lib/data/players.ts etc. directly)
@@ -442,6 +442,43 @@ export async function createClubFromResearch(c: ClubCandidate): Promise<{ ok: bo
       engagement_type: "PLAYER_RECRUITMENT",
       ai_note: withSources(c.aiNote, c.sources),
     });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Deep-dive update from the Researcher agent (see "Research this company"
+// on the sponsor detail page). Sponsor-facing fields (research.*,
+// reasonToSponsor) stay clean; source citations go on ai_recommendation
+// only, same rule as createSponsorFromResearch above — never let AI
+// provenance leak into copy that gets sent to the sponsor.
+export async function updateSponsorResearch(id: string, update: SponsorProfileUpdate): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const supabase = getSupabaseServerClient();
+  const { data: existing, error: fetchError } = await supabase.from("sponsors").select("research").eq("id", id).single();
+  if (fetchError || !existing) return { ok: false, error: fetchError?.message ?? "Sponsor not found" };
+
+  const existingResearch = (existing.research ?? {}) as Record<string, unknown>;
+  const research = {
+    ...existingResearch,
+    companyDescription: update.companyDescription,
+    swissPresence: update.swissPresence,
+    targetAudience: update.targetAudience,
+    recentMarketingActivity: update.recentMarketingActivity,
+    existingSponsorships: update.existingSponsorships,
+    reasonToSponsor: update.reasonToSponsor,
+    activationOpportunities: update.activationOpportunities,
+    suggestedPackage: update.suggestedPackage,
+  };
+
+  const { error } = await supabase
+    .from("sponsors")
+    .update({
+      research,
+      ai_recommendation: withSources(update.aiRecommendation, update.sources),
+      last_activity: "Researcher agent completed a deep company brief",
+      last_activity_date: new Date().toISOString(),
+    })
+    .eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

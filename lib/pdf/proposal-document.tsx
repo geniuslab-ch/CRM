@@ -85,17 +85,9 @@ const styles = StyleSheet.create({
 
   paragraph: { fontSize: 10, color: COLOR.ink, lineHeight: 1.5 },
 
-  fitBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: COLOR.primary,
-    color: COLOR.primaryInk,
-    fontSize: 8.5,
-    fontFamily: "Helvetica-Bold",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 3,
-    marginTop: 10,
-  },
+  briefRow: { marginBottom: 8 },
+  briefLabel: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: COLOR.accent, letterSpacing: 0.6, marginBottom: 2, textTransform: "uppercase" },
+  briefText: { fontSize: 9.5, color: COLOR.ink, lineHeight: 1.4 },
 
   stepRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
   stepNumber: {
@@ -150,6 +142,17 @@ function LogoMark() {
   );
 }
 
+// The Researcher agent's deep-dive briefs can run to several hundred
+// words per field (great for the CRM's Company information card, which
+// shows them in full) — far too long for a scannable one-page pitch, so
+// the PDF gets a clipped excerpt instead of the full paragraph.
+function clip(text: string, max = 240): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${lastSpace > 0 ? cut.slice(0, lastSpace) : cut}…`;
+}
+
 function CheckGlyph() {
   return (
     <Svg width={11} height={11} style={{ marginRight: 8, marginTop: 2 }}>
@@ -173,6 +176,7 @@ export function ProposalDocument({ sponsor, tier }: { sponsor: Sponsor; tier: Sp
           <LogoMark />
           <View style={styles.headerRight}>
             <Text style={styles.docTitle}>SPONSORSHIP PROPOSAL</Text>
+            <Text style={styles.docDate}>Panna League First — Lausanne</Text>
             <Text style={styles.docDate}>{preparedDate}</Text>
           </View>
         </View>
@@ -217,10 +221,25 @@ export function ProposalDocument({ sponsor, tier }: { sponsor: Sponsor; tier: Sp
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Company brief</Text>
+            <View style={styles.briefRow}>
+              <Text style={styles.briefLabel}>Swiss presence</Text>
+              <Text style={styles.briefText}>{clip(sponsor.research.swissPresence)}</Text>
+            </View>
+            <View style={styles.briefRow}>
+              <Text style={styles.briefLabel}>Recent activity</Text>
+              <Text style={styles.briefText}>{clip(sponsor.research.recentMarketingActivity)}</Text>
+            </View>
+            <View style={styles.briefRow}>
+              <Text style={styles.briefLabel}>Existing sponsorships</Text>
+              <Text style={styles.briefText}>{clip(sponsor.research.existingSponsorships)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Why Panna League</Text>
             <Text style={styles.paragraph}>{sponsor.fitWhy}</Text>
             <Text style={[styles.paragraph, { marginTop: 6 }]}>{sponsor.research.reasonToSponsor}</Text>
-            <Text style={styles.fitBadge}>SPONSOR FIT SCORE — {sponsor.fit.overall}/100</Text>
           </View>
 
           <View style={styles.section}>
@@ -242,6 +261,7 @@ export function ProposalDocument({ sponsor, tier }: { sponsor: Sponsor; tier: Sp
           <View style={styles.closing}>
             <Text style={styles.closingLine}>Let&apos;s talk.</Text>
             <Text style={styles.closingSub}>— Panna League Team</Text>
+            <Text style={styles.closingSub}>pannaleague@mycountryisgoodat.com</Text>
           </View>
         </View>
 
