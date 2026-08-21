@@ -131,13 +131,13 @@ Every "AI" behavior in this prototype — scoring, research, reply classificatio
 ## 10. Real AI integration roadmap — what's left
 
 1. ~~Implement `ClaudeAIProvider`~~ — done (`lib/ai/providers/claude.ts`, see §9).
-2. Replace the static generators in `lib/data/*` with a real database behind the same TypeScript types in `types/index.ts` — the UI never needs to change. See §12 below for a concrete plan.
+2. Replace the static generators in `lib/data/*` with a real database behind the same TypeScript types in `types/index.ts` — the UI never needs to change. See §11 below for a concrete plan.
 3. Implement the integration interfaces already stubbed in `lib/integrations/`:
-   - `calendar.ts` → Google Calendar (real meeting booking for the Booking Agent)
-   - `email.ts` → Gmail API (real sending for the Outreach Agent)
-   - `crm.ts` → HubSpot/Pipedrive-compatible sync
+   - ~~`calendar.ts` → Google Calendar~~ — done, see §12.
+   - ~~`email.ts` → Gmail API~~ — done, see §12.
+   - `crm.ts` → HubSpot/Pipedrive-compatible sync (optional — see §13, the app's own Sponsor CRM usually covers this)
    - `research.ts` → a web research or Apollo-style prospect API
-   - `social.ts` → Instagram/TikTok/YouTube/LinkedIn publishing APIs (see §13)
+   - `social.ts` → Instagram/TikTok/YouTube/LinkedIn publishing APIs (see §14)
 4. Add authentication and persistence (the prototype is stateless/in-memory by design).
 5. Wire the Analytics page to real event tracking instead of derived demo numbers.
 
@@ -170,23 +170,33 @@ The app currently generates `Player[]`, `Club[]`, `Sponsor[]` in memory (`lib/da
 
 This is a few hours of focused work, not a rebuild — the types and every page/component already assume this exact shape.
 
-## 12. Which pieces are free to wire up
+## 12. Real Calendar & Gmail (Google) — already wired up
+
+`lib/integrations/calendar.ts` and `lib/integrations/email.ts` are working implementations, not stubs. They compute real free/busy slots and create real Calendar events and Gmail sends via `googleapis`, using a single organizer's OAuth refresh token — the right model for a one-person tool (no per-visitor Google login flow). To turn them on:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and **Gmail API**, then create an OAuth **Desktop app** client. Put its Client ID/Secret in `.env.local` as `GOOGLE_CALENDAR_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_SECRET`.
+2. Run `npm run google:auth` locally. It prints a URL — open it, sign in with the Google account Panna League should use, approve access. The script then prints a `GOOGLE_REFRESH_TOKEN` line; paste it into `.env.local`.
+3. Restart the dev server. `getCalendarProvider()` / `getEmailProvider()` (in `lib/integrations/calendar.ts` / `email.ts`) now return the real Google-backed classes instead of the mocks — no other code changes needed.
+
+Available now as server routes (not yet wired to a UI control, same as `/api/ai/classify`): `GET /api/calendar/slots` (real free/busy for the next 7 business days), `POST /api/calendar/book`, `POST /api/email/send`. This step 2 (`npm run google:auth`) can't be done from inside an AI session — it needs your interactive Google login in a real browser — everything else is already built.
+
+## 13. Which pieces are free to wire up
 
 | Integration | Free tier? |
 |---|---|
 | Database (Neon / Supabase Postgres) | Yes — generous free tier, no card required for Neon |
 | Google Calendar API | Yes — free, generous quota, just needs OAuth consent setup |
 | Gmail API (sending) | Yes — free, daily send-quota limits apply |
-| HubSpot CRM | Yes — free CRM tier covers contacts/deals at this scale |
+| External CRM (HubSpot etc.) | Optional — the app's own Sponsor CRM page (Kanban, stages, notes) already is the CRM for this use case. Only wire an external one if you need to sync with a separate sales team's tool. If you do: HubSpot's private-app tokens require org superadmin — either ask your org admin, or sign up a brand-new free HubSpot account (you're automatically admin there), or use Pipedrive/Zoho's free tiers instead. |
 | YouTube Data API | Yes — free, with a daily quota |
 | Instagram/Facebook Graph API (posting) | Free to use, but requires a Meta Business/Developer account and App Review before it can post on behalf of a real Page |
 | TikTok API | Free to use, but requires a developer application and app review before publishing is unlocked |
 | LinkedIn API (posting) | Requires LinkedIn Marketing Developer Platform partner approval — not self-serve |
 | Anthropic Claude API | **Not free ongoing** — new accounts get a small free credit grant, then pay-per-token (see §9) |
 
-Net: the database and calendar/email/CRM integrations are realistically free to build today. Social **publishing** APIs are free of charge but gated by each platform's developer approval process (see §13) — budget days-to-weeks of lead time, not code time, for those.
+Net: the database and calendar/email/CRM integrations are realistically free to build today. Social **publishing** APIs are free of charge but gated by each platform's developer approval process (see §14) — budget days-to-weeks of lead time, not code time, for those.
 
-## 13. Connecting social publishing
+## 14. Connecting social publishing
 
 Each platform's real posting API sits behind the same interface already stubbed in `lib/integrations/social.ts` (`SocialProvider.publish(platform, caption)`), so wiring one in follows the same pattern as §9's Claude integration: implement it server-side, call it from a Route Handler, never expose tokens to the browser.
 
@@ -197,7 +207,7 @@ Each platform's real posting API sits behind the same interface already stubbed 
 
 Store each platform's OAuth tokens server-side (env vars for a single organizer account, or a database table if you support multiple accounts later), implement `MockSocialProvider`'s real counterpart per platform, and swap it in the same way `getAIProvider()` switches between mock and live — behind one function, never scattered through the UI.
 
-## 14. Project structure
+## 15. Project structure
 
 ```
 /app                      Next.js App Router pages
@@ -218,7 +228,7 @@ Store each platform's OAuth tokens server-side (env vars for a single organizer 
 /types                    shared TypeScript domain types
 ```
 
-## 15. Deployment
+## 16. Deployment
 
 The app is a standard Next.js project and deploys to any Next.js-compatible host (Vercel, Netlify, a Node server, Docker).
 
@@ -229,7 +239,7 @@ npm run start
 
 For Vercel: connect the repository and deploy — no environment variables are required for the default (mock) mode.
 
-## 16. GitHub instructions
+## 17. GitHub instructions
 
 ```bash
 git init
@@ -240,12 +250,12 @@ git remote add origin YOUR_GITHUB_REPOSITORY
 git push -u origin main
 ```
 
-## 17. Future roadmap
+## 18. Future roadmap
 
 1. ~~Connect a real Claude API key and implement `ClaudeAIProvider`~~ — done, see §9.
 2. Persist data in a real database (§11) and add authentication for multi-organizer use.
-3. Wire real calendar, email and CRM integrations so Booking/Outreach agents take real-world actions.
-4. Connect social publishing APIs (§13) so the Content Agent can schedule and publish directly.
+3. ~~Wire real calendar and email integrations~~ — done, see §12. Wire a UI control (Booking Agent "confirm meeting" button, Outreach "send real email") to call the now-working `/api/calendar/*` and `/api/email/send` routes.
+4. Connect social publishing APIs (§14) so the Content Agent can schedule and publish directly.
 5. Add real-time analytics ingestion so the Analytics page reflects live event and campaign performance.
 
 ---

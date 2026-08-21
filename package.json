@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "google:auth": "node scripts/google-auth.mjs"
   },
   "dependencies": {
     "next": "14.2.35",
@@ -19,9 +20,11 @@
     "tailwind-merge": "^2.5.2",
     "class-variance-authority": "^0.7.0",
     "@anthropic-ai/sdk": "^0.120.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "googleapis": "^176.0.0"
   },
   "devDependencies": {
+    "dotenv": "^16.4.5",
     "typescript": "^5.5.4",
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
