@@ -5,19 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { Why } from "@/components/ui/why";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { FitBar } from "@/components/sponsors/fit-bar";
 import { ProposalGenerator } from "@/components/sponsors/proposal-generator";
 import { OutreachComposer } from "@/components/sponsors/outreach-composer";
-import { sponsors } from "@/lib/data/sponsors";
+import { getSponsors } from "@/lib/supabase/repository";
 import { conversations } from "@/lib/data/conversations";
 import { whyPannaLeague } from "@/lib/agents/sponsorResearcher";
 import { formatCHF, timeAgo } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return sponsors.map((s) => ({ id: s.id }));
-}
+// No generateStaticParams — sponsors can now come from a live database
+// that changes independently of build time, so every request renders
+// fresh rather than serving a build-time snapshot.
+export const dynamic = "force-dynamic";
 
-export default function SponsorDetailPage({ params }: { params: { id: string } }) {
+export default async function SponsorDetailPage({ params }: { params: { id: string } }) {
+  const { data: sponsors, source } = await getSponsors();
   const sponsor = sponsors.find((s) => s.id === params.id);
   if (!sponsor) notFound();
 
@@ -26,10 +29,13 @@ export default function SponsorDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="space-y-6">
-      <Link href="/sponsors" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to Sponsor CRM
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/sponsors" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Sponsor CRM
+        </Link>
+        <DataSourceBadge source={source} />
+      </div>
 
       <Card className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
