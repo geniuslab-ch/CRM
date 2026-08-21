@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/nav";
 import { MobileNav } from "./mobile-nav";
-import { Zap, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 export function Topbar() {
   const pathname = usePathname();
@@ -23,10 +23,6 @@ export function Topbar() {
         <h1 className="text-lg font-semibold tracking-tight">{current?.label ?? "Dashboard"}</h1>
       </div>
       <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs text-muted-foreground sm:flex">
-          <Zap className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-          146 AI hours saved
-        </div>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold">
           NS
         </div>

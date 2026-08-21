@@ -70,8 +70,8 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
       const result = await res.json();
       setSentVia({ mock: result.mock });
       setStatus("sent");
-    } catch {
-      setSendError("Couldn't send — check the email integration is configured and try again.");
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Couldn't send — please try again.");
     } finally {
       setSending(false);
     }
