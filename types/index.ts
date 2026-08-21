@@ -273,7 +273,7 @@ export interface Agent {
   role: string;
   status: AgentStatus;
   headline: string; // e.g. "27 prospects analyzed"
-  tasksCompleted: number;
+  tasksCompleted: number | null; // null = not tracked yet (no real event log for this agent)
   metricLabel: string;
   metricValue: string;
   averageScore?: number;

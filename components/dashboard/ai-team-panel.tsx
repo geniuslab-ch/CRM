@@ -2,10 +2,12 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { AgentIcon } from "@/components/ui/agent-icon";
 import { StatusDot } from "@/components/ui/status-dot";
-import { agents } from "@/lib/data/agents";
+import { getLiveAgents } from "@/lib/agents/liveTeam";
 import { ChevronRight } from "lucide-react";
 
-export function AiTeamPanel() {
+export async function AiTeamPanel() {
+  const agents = await getLiveAgents();
+
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -35,7 +37,7 @@ export function AiTeamPanel() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
-                  {agent.status === "WAITING" ? "Waiting" : agent.status === "RUNNING" ? `${agent.metricValue} qualified` : "Active"}
+                  {agent.status === "IDLE" ? "Not tracked" : agent.status === "WAITING" ? "Waiting" : "Active"}
                 </span>
                 <StatusDot status={agent.status} />
               </div>

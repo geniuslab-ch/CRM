@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AgentIcon } from "@/components/ui/agent-icon";
 import { StatusDot } from "@/components/ui/status-dot";
 import { KpiCard } from "@/components/ui/kpi-card";
-import { agents } from "@/lib/data/agents";
+import { getLiveAgents } from "@/lib/agents/liveTeam";
 import { formatCHF, timeAgo } from "@/lib/utils";
 import { ListChecks, Target, TrendingUp } from "lucide-react";
 
-export function generateStaticParams() {
-  return agents.map((a) => ({ id: a.id }));
-}
+// No generateStaticParams — agent stats are computed live from Supabase,
+// so this can't be snapshotted at build time (see sponsors/[id] for the
+// same reasoning).
+export const dynamic = "force-dynamic";
 
-export default function AgentDetailPage({ params }: { params: { id: string } }) {
+export default async function AgentDetailPage({ params }: { params: { id: string } }) {
+  const agents = await getLiveAgents();
   const agent = agents.find((a) => a.id === params.id);
   if (!agent) notFound();
 
@@ -41,7 +43,9 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
       </Card>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="Tasks completed" value={String(agent.tasksCompleted)} icon={ListChecks} />
+        {agent.tasksCompleted !== null && (
+          <KpiCard label="Tasks completed" value={String(agent.tasksCompleted)} icon={ListChecks} />
+        )}
         <KpiCard label={agent.metricLabel} value={agent.metricValue} icon={Target} />
         {agent.averageScore !== undefined && <KpiCard label="Average score" value={String(agent.averageScore)} icon={TrendingUp} />}
         {agent.potentialPipeline !== undefined && (
@@ -55,15 +59,21 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             <CardTitle>Recent activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {agent.recentActivity.map((task) => (
-              <div key={task.id} className="rounded-xl border border-border bg-surface-2 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">{task.summary}</p>
-                  <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(task.timestamp)}</span>
+            {agent.recentActivity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No per-agent activity log yet — see the metric above and the Dashboard/CRM pages for this agent&apos;s real output.
+              </p>
+            ) : (
+              agent.recentActivity.map((task) => (
+                <div key={task.id} className="rounded-xl border border-border bg-surface-2 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{task.summary}</p>
+                    <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(task.timestamp)}</span>
+                  </div>
+                  {task.reasoning && <p className="mt-1 text-xs text-muted-foreground">{task.reasoning}</p>}
                 </div>
-                {task.reasoning && <p className="mt-1 text-xs text-muted-foreground">{task.reasoning}</p>}
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 

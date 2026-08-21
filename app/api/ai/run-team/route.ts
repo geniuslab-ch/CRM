@@ -115,7 +115,10 @@ export async function POST() {
           send({ type: "log", agentId: "sponsor-finder", message: `Sponsor Finder hit an error and was skipped: ${err instanceof Error ? err.message : String(err)}` });
         }
 
-        if (newPlayers + newClubs + newSponsors > 0) revalidatePath("/");
+        if (newPlayers + newClubs + newSponsors > 0) {
+          revalidatePath("/");
+          revalidatePath("/agents");
+        }
         send({ type: "done", summary: { newPlayers, newClubs, newSponsors } });
       } catch (err) {
         send({ type: "error", message: err instanceof Error ? err.message : String(err) });

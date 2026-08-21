@@ -3,9 +3,13 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { AgentIcon } from "@/components/ui/agent-icon";
 import { StatusDot } from "@/components/ui/status-dot";
-import { agents } from "@/lib/data/agents";
+import { getLiveAgents } from "@/lib/agents/liveTeam";
 
-export default function AgentsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AgentsPage() {
+  const agents = await getLiveAgents();
+
   return (
     <div>
       <PageHeader
