@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { isProspectingConfigured, researchPlayers, researchClubs, researchSponsors } from "@/lib/agents/prospectResearch";
 import { getPlayers, getClubs, getSponsors, createPlayerFromResearch, createClubFromResearch, createSponsorFromResearch } from "@/lib/supabase/repository";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -60,6 +61,7 @@ export async function POST() {
             const result = await createPlayerFromResearch(c);
             if (result.ok) {
               newPlayers++;
+              revalidatePath("/players");
               send({ type: "log", agentId: "player-recruiter", message: `Added ${c.name} (${c.city}) as a new player lead — ${c.sources.length} source(s) cited.` });
             } else {
               send({ type: "log", agentId: "player-recruiter", message: `Found ${c.name} but couldn't save it: ${result.error}` });
@@ -81,6 +83,7 @@ export async function POST() {
             const result = await createClubFromResearch(c);
             if (result.ok) {
               newClubs++;
+              revalidatePath("/clubs");
               send({ type: "log", agentId: "club-finder", message: `Added ${c.name} (${c.city}) as a new club lead — ${c.sources.length} source(s) cited.` });
             } else {
               send({ type: "log", agentId: "club-finder", message: `Found ${c.name} but couldn't save it: ${result.error}` });
@@ -102,6 +105,7 @@ export async function POST() {
             const result = await createSponsorFromResearch(c);
             if (result.ok) {
               newSponsors++;
+              revalidatePath("/sponsors");
               send({ type: "log", agentId: "sponsor-finder", message: `Added ${c.name} (${c.category}) as a new sponsor prospect — ${c.sources.length} source(s) cited.` });
             } else {
               send({ type: "log", agentId: "sponsor-finder", message: `Found ${c.name} but couldn't save it: ${result.error}` });
@@ -111,6 +115,7 @@ export async function POST() {
           send({ type: "log", agentId: "sponsor-finder", message: `Sponsor Finder hit an error and was skipped: ${err instanceof Error ? err.message : String(err)}` });
         }
 
+        if (newPlayers + newClubs + newSponsors > 0) revalidatePath("/");
         send({ type: "done", summary: { newPlayers, newClubs, newSponsors } });
       } catch (err) {
         send({ type: "error", message: err instanceof Error ? err.message : String(err) });
