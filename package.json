@@ -17,7 +17,9 @@
     "framer-motion": "^11.3.24",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.2",
-    "class-variance-authority": "^0.7.0"
+    "class-variance-authority": "^0.7.0",
+    "@anthropic-ai/sdk": "^0.120.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "typescript": "^5.5.4",

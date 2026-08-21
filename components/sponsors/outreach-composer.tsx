@@ -5,25 +5,43 @@ import { ArrowDown, Check, Pencil, Send, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sponsor } from "@/types";
-import { getAIProvider } from "@/lib/ai";
 import { buildPersonalizationAngle } from "@/lib/agents/outreach";
 
 export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generated" | "approved" | "sent">("idle");
   const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
 
   async function generate() {
-    const ai = getAIProvider();
-    const result = await ai.generateOutreach({
-      targetName: sponsor.research.contactPerson.name,
-      organization: sponsor.name,
-      researchInsight: sponsor.research.recentMarketingActivity,
-      personalizationAngle: buildPersonalizationAngle(sponsor.category),
-      category: "SPONSOR",
-    });
-    setMessage(result.message);
-    setStatus("generated");
+    setLoading(true);
+    setError(null);
+    try {
+      // Calls a server route rather than any AI provider directly — the
+      // Anthropic API key (when configured) never reaches the browser.
+      const res = await fetch("/api/ai/outreach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetName: sponsor.research.contactPerson.name,
+          organization: sponsor.name,
+          researchInsight: sponsor.research.recentMarketingActivity,
+          personalizationAngle: buildPersonalizationAngle(sponsor.category),
+          category: "SPONSOR",
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Request failed");
+      const result = await res.json();
+      setMessage(result.message);
+      setProvider(result.provider);
+      setStatus("generated");
+    } catch {
+      setError("Couldn't generate outreach right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -31,18 +49,21 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Outreach Agent</CardTitle>
         {!message && (
-          <Button size="sm" onClick={generate}>
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            Generate outreach
+          <Button size="sm" onClick={generate} disabled={loading}>
+            <Sparkles className={loading ? "h-4 w-4 animate-pulse" : "h-4 w-4"} aria-hidden="true" />
+            {loading ? "Generating…" : "Generate outreach"}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {!message ? (
-          <p className="text-sm text-muted-foreground">
-            Generate a personalized message for {sponsor.research.contactPerson.name} ({sponsor.research.contactPerson.role})
-            using this company&apos;s research profile — never a generic template.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Generate a personalized message for {sponsor.research.contactPerson.name} ({sponsor.research.contactPerson.role})
+              using this company&apos;s research profile — never a generic template.
+            </p>
+            {error && <p className="text-sm text-danger">{error}</p>}
+          </div>
         ) : (
           <div className="space-y-3">
             <div className="rounded-xl border border-border bg-surface-2 p-3">
@@ -60,7 +81,14 @@ export function OutreachComposer({ sponsor }: { sponsor: Sponsor }) {
               <ArrowDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             </div>
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary">Generated message</p>
+              <div className="mb-1.5 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">Generated message</p>
+                {provider && (
+                  <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted-foreground">
+                    via {provider}
+                  </span>
+                )}
+              </div>
               {editing ? (
                 <textarea
                   value={message}

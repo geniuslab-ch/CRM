@@ -84,11 +84,13 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            The application is currently running on <span className="font-semibold text-foreground">Mock AI</span> — realistic
-            predefined responses, no API keys required. Set <code className="rounded bg-surface-2 px-1.5 py-0.5">ANTHROPIC_API_KEY</code>{" "}
-            and <code className="rounded bg-surface-2 px-1.5 py-0.5">NEXT_PUBLIC_AI_MODE=live</code> in your environment, then
-            implement <code className="rounded bg-surface-2 px-1.5 py-0.5">lib/ai/providers/claude.ts</code> to switch to live
-            Claude-powered agents without changing any UI code.
+            The application runs on <span className="font-semibold text-foreground">Mock AI</span> by default — realistic
+            predefined responses, no API keys required. To switch the Outreach Agent to live Claude generation, set{" "}
+            <code className="rounded bg-surface-2 px-1.5 py-0.5">ANTHROPIC_API_KEY</code> and{" "}
+            <code className="rounded bg-surface-2 px-1.5 py-0.5">NEXT_PUBLIC_AI_MODE=live</code> in your environment and restart
+            the server — <code className="rounded bg-surface-2 px-1.5 py-0.5">lib/ai/providers/claude.ts</code> is already wired
+            up, no code changes required. The Sponsor Detail page&apos;s outreach composer will show &ldquo;via Claude AI&rdquo;
+            once live mode is active.
           </p>
         </CardContent>
       </Card>
