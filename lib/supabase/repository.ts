@@ -457,14 +457,19 @@ export async function createSponsorFromResearch(c: SponsorCandidate): Promise<{ 
       category: c.category,
       city: c.city,
       fit: c.fit,
-      fit_why: withSources(c.fitWhy, c.sources),
+      // Sponsor-facing copy (fitWhy, research.*) stays clean — it can end
+      // up verbatim in the exported PDF and in outreach emails. Source
+      // citations are provenance for internal review only, so they live
+      // in ai_recommendation (shown in the CRM's "AI recommendation"
+      // card), never in anything sent to the sponsor.
+      fit_why: c.fitWhy,
       potential_value: c.potentialValue,
       stage: "PROSPECT",
       last_activity: "Identified by the Sponsor Finder agent via live web research",
       last_activity_date: new Date().toISOString(),
       next_action: "Review AI research, verify contact details, then move to outreach.",
       research: c.research,
-      ai_recommendation: c.aiRecommendation,
+      ai_recommendation: withSources(c.aiRecommendation, c.sources),
     });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
