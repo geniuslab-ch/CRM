@@ -5,26 +5,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getDashboardKpis } from "@/lib/data";
-import { pannaEvent } from "@/lib/data/event";
 import { formatCHF } from "@/lib/utils";
 
-const kpis = getDashboardKpis();
+interface DemoModeProps {
+  playersConfirmed: number;
+  playersTotal: number;
+  sponsorPipeline: number;
+  meetingsBooked: number;
+  contentPublished: number;
+}
 
-const STEPS = [
-  { label: `${pannaEvent.playerTarget} player target`, value: `${pannaEvent.playersConfirmed} confirmed` },
-  { label: "Sponsor pipeline", value: formatCHF(kpis.sponsorPipeline) },
-  { label: "Meetings", value: `${kpis.meetings} booked` },
-  { label: "Content", value: `${kpis.contentPublished} published` },
-  { label: "Event readiness", value: "Pre-launch — on track" },
-];
+export function DemoMode({ playersConfirmed, playersTotal, sponsorPipeline, meetingsBooked, contentPublished }: DemoModeProps) {
+  const [step, setStep] = useState(0);
 
-export function DemoMode() {
-  const [step, setStep] = useState(STEPS.length);
+  const activity = playersTotal + sponsorPipeline + meetingsBooked + contentPublished;
+  const readiness = activity === 0 ? "Just getting started" : playersConfirmed > 0 ? "Building momentum" : "Pipeline in progress";
+
+  const steps = [
+    { label: "Players in pipeline", value: `${playersConfirmed} confirmed of ${playersTotal}` },
+    { label: "Sponsor pipeline", value: formatCHF(sponsorPipeline) },
+    { label: "Meetings", value: `${meetingsBooked} booked` },
+    { label: "Content", value: `${contentPublished} published` },
+    { label: "Status", value: readiness },
+  ];
 
   function start() {
     setStep(0);
-    STEPS.forEach((_, idx) => {
+    steps.forEach((_, idx) => {
       setTimeout(() => setStep(idx + 1), (idx + 1) * 500);
     });
   }
@@ -33,19 +40,19 @@ export function DemoMode() {
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold">Demo Mode</h2>
+          <h2 className="text-base font-semibold">Live Walkthrough</h2>
           <p className="text-xs text-muted-foreground">
-            Walk through the full ecosystem in seconds — built for investor &amp; partner demos.
+            A real, live summary of the ecosystem so far — built for investor &amp; partner demos.
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={start}>
           <Sparkles className="h-4 w-4" aria-hidden="true" />
-          START DEMO
+          START
         </Button>
       </div>
 
       <div className="space-y-1">
-        {STEPS.map((s, idx) => (
+        {steps.map((s, idx) => (
           <div key={s.label}>
             <AnimatePresence>
               {idx < step && (
@@ -60,7 +67,7 @@ export function DemoMode() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {idx < STEPS.length - 1 && idx < step - 1 && (
+            {idx < steps.length - 1 && idx < step - 1 && (
               <div className="flex justify-center py-1">
                 <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
               </div>

@@ -120,15 +120,24 @@ export interface LiveDashboardKpis {
   sponsorPipeline: number;
   clubPartners: number;
   clubsTotal: number;
+  meetingsBooked: number;
+  contentPublished: number;
+  contentIdeasTotal: number;
 }
 
 // Real counts derived from the same live tables the CRM pages read —
-// used by the Dashboard so its KPI cards reflect actual data instead of
-// the bundled demo numbers. Only covers what a live table exists for
-// today (players/clubs/sponsors); meetings/content/digital-reach stay
-// illustrative until those get their own tables (see README §18).
+// used by the Dashboard so its KPI cards and Demo Mode reflect actual
+// data instead of the bundled demo numbers. Digital reach still has no
+// backing data source (no analytics API connected) and stays out of
+// this entirely rather than being estimated.
 export async function getLiveDashboardKpis(): Promise<LiveDashboardKpis> {
-  const [players, clubs, sponsors] = await Promise.all([getPlayers(), getClubs(), getSponsors()]);
+  const [players, clubs, sponsors, meetings, contentIdeas] = await Promise.all([
+    getPlayers(),
+    getClubs(),
+    getSponsors(),
+    getMeetings(),
+    getContentIdeas(),
+  ]);
 
   const anyLive = players.source === "live" || clubs.source === "live" || sponsors.source === "live";
 
@@ -139,6 +148,9 @@ export async function getLiveDashboardKpis(): Promise<LiveDashboardKpis> {
     sponsorsWon: sponsors.data.filter((s) => s.stage === "WON").length,
     sponsorsTotal: sponsors.data.length,
     sponsorPipeline: sponsors.data.filter((s) => !["WON", "LOST"].includes(s.stage)).reduce((sum, s) => sum + s.potentialValue, 0),
+    meetingsBooked: meetings.data.length,
+    contentPublished: contentIdeas.data.filter((c) => c.status === "PUBLISHED").length,
+    contentIdeasTotal: contentIdeas.data.length,
     clubPartners: clubs.data.filter((c) => c.status === "CONFIRMED" || c.status === "PARTNER").length,
     clubsTotal: clubs.data.length,
   };
