@@ -1,7 +1,18 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  // /login renders its own full-bleed layout — no nav chrome for an
+  // unauthenticated visitor to see.
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
