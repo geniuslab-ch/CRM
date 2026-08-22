@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AgentIcon } from "@/components/ui/agent-icon";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -13,6 +13,52 @@ import { ListChecks, Target, TrendingUp } from "lucide-react";
 // so this can't be snapshotted at build time (see sponsors/[id] for the
 // same reasoning).
 export const dynamic = "force-dynamic";
+
+// None of these agents have an in-place "run task" button here — each one's
+// real work happens on the record it acts on (a player, club, sponsor or
+// conversation), not on this summary page. This tells people where that is.
+const WHERE_TO_ACT: Record<string, { text: string; href: string; linkLabel: string }> = {
+  "player-recruiter": {
+    text: "Add, score and move players through the pipeline from the Players page.",
+    href: "/players",
+    linkLabel: "Go to Players",
+  },
+  "club-finder": {
+    text: "Add clubs and run outreach from a club's detail page.",
+    href: "/clubs",
+    linkLabel: "Go to Clubs",
+  },
+  "sponsor-finder": {
+    text: "Add sponsor prospects and track fit scoring from the Sponsors page.",
+    href: "/sponsors",
+    linkLabel: "Go to Sponsors",
+  },
+  "sponsor-researcher": {
+    text: "Open a sponsor's detail page and use the Research panel to generate a company brief.",
+    href: "/sponsors",
+    linkLabel: "Go to Sponsors",
+  },
+  outreach: {
+    text: "Send outreach from a sponsor's or club's detail page — that's where messages actually go out.",
+    href: "/sponsors",
+    linkLabel: "Go to Sponsors",
+  },
+  "conversation-manager": {
+    text: "Real replies land in the Inbox automatically (polled every 15 min) — review and reply from there.",
+    href: "/conversations",
+    linkLabel: "Go to Conversations",
+  },
+  booking: {
+    text: "There's no standalone booking task here — book a real meeting from a sponsor's or club's detail page, or copy their self-serve booking link so they can pick a slot themselves.",
+    href: "/sponsors",
+    linkLabel: "Go to Sponsors",
+  },
+  content: {
+    text: "Generate content ideas from a sponsor's confirmed deal terms on their detail page, or browse the Content board.",
+    href: "/content",
+    linkLabel: "Go to Content",
+  },
+};
 
 export default async function AgentDetailPage({ params }: { params: { id: string } }) {
   const agents = await getLiveAgents();
@@ -41,6 +87,19 @@ export default async function AgentDetailPage({ params }: { params: { id: string
           </div>
         </div>
       </Card>
+
+      {WHERE_TO_ACT[agent.id] && (
+        <Card className="flex flex-wrap items-center justify-between gap-4 border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm text-foreground">{WHERE_TO_ACT[agent.id].text}</p>
+          <Link
+            href={WHERE_TO_ACT[agent.id].href}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            {WHERE_TO_ACT[agent.id].linkLabel}
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {agent.tasksCompleted !== null && (

@@ -1,13 +1,15 @@
 import { PageHeader } from "@/components/layout/page-header";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { FunnelChart } from "@/components/analytics/funnel-chart";
 import { AgentProductivityChart } from "@/components/analytics/agent-productivity-chart";
 import { ContentPerformanceChart } from "@/components/analytics/content-performance-chart";
-import { players } from "@/lib/data/players";
-import { clubs } from "@/lib/data/clubs";
-import { sponsors } from "@/lib/data/sponsors";
-import { meetings } from "@/lib/data/meetings";
+import { getPlayers, getClubs, getSponsors, getMeetings, getContentIdeas } from "@/lib/supabase/repository";
+import { getLiveAgents } from "@/lib/agents/liveTeam";
+import { Player, Club, Sponsor } from "@/types";
 
-function playerFunnel() {
+export const dynamic = "force-dynamic";
+
+function playerFunnel(players: Player[]) {
   return [
     { stage: "Identified", count: players.length },
     { stage: "Contacted", count: players.filter((p) => p.status !== "IDENTIFIED").length },
@@ -16,7 +18,7 @@ function playerFunnel() {
   ];
 }
 
-function clubFunnel() {
+function clubFunnel(clubs: Club[]) {
   return [
     { stage: "Identified", count: clubs.length },
     { stage: "Contacted", count: clubs.filter((c) => c.status !== "IDENTIFIED").length },
@@ -28,7 +30,7 @@ function clubFunnel() {
   ];
 }
 
-function sponsorFunnel() {
+function sponsorFunnel(sponsors: Sponsor[]) {
   const order = ["PROSPECT", "RESEARCH", "CONTACTED", "REPLIED", "INTERESTED", "MEETING", "PROPOSAL", "NEGOTIATION", "WON"];
   return [
     { stage: "Prospects", count: sponsors.length },
@@ -39,27 +41,39 @@ function sponsorFunnel() {
   ];
 }
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const [players, clubs, sponsors, meetings, contentIdeas, agents] = await Promise.all([
+    getPlayers(),
+    getClubs(),
+    getSponsors(),
+    getMeetings(),
+    getContentIdeas(),
+    getLiveAgents(),
+  ]);
+
+  const anyLive = [players, clubs, sponsors, meetings, contentIdeas].some((r) => r.source === "live");
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Analytics"
-        description="Recruitment funnels, sponsor pipeline conversion, content performance and AI productivity — all in one view."
+        description="Recruitment funnels, sponsor pipeline conversion, content performance and AI team output — all real, all from what's actually in the CRM."
+        action={<DataSourceBadge source={anyLive ? "live" : "unavailable"} />}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <FunnelChart title="Player recruitment funnel" data={playerFunnel()} />
-        <FunnelChart title="Club recruitment funnel" data={clubFunnel()} />
-        <FunnelChart title="Sponsor funnel" data={sponsorFunnel()} />
+        <FunnelChart title="Player recruitment funnel" data={playerFunnel(players.data)} />
+        <FunnelChart title="Club recruitment funnel" data={clubFunnel(clubs.data)} />
+        <FunnelChart title="Sponsor funnel" data={sponsorFunnel(sponsors.data)} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ContentPerformanceChart />
-        <AgentProductivityChart />
+        <ContentPerformanceChart ideas={contentIdeas.data} />
+        <AgentProductivityChart agents={agents} />
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {meetings.length} meetings booked to date · {sponsors.filter((s) => s.stage === "WON").length} sponsors closed.
+        {meetings.data.length} meetings booked to date · {sponsors.data.filter((s) => s.stage === "WON").length} sponsors closed.
       </p>
     </div>
   );

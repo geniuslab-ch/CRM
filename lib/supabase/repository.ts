@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus, ActivationConcept } from "@/types";
+import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus, ActivationConcept, PannaEvent, EventChecklistItem } from "@/types";
 import { PlayerCandidate, ClubCandidate, SponsorCandidate, SponsorProfileUpdate } from "@/lib/agents/prospectResearch";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
@@ -765,6 +765,151 @@ export async function createSponsorFromResearch(c: SponsorCandidate): Promise<{ 
       research: c.research,
       ai_recommendation: withSources(c.aiRecommendation, c.sources),
     });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// ── Events ───────────────────────────────────────────────────
+// Real Event Control Center data. Player/club/sponsor recruitment isn't
+// split per event yet — there's one shared pipeline — so confirmed-count
+// and commercial-pipeline stats are only ever computed for the primary
+// event (see rowToEvent / getEvents); any other event honestly starts at
+// zero rather than reusing or guessing numbers.
+
+function rowToEvent(row: any, primaryKpis: LiveDashboardKpis | null): PannaEvent {
+  const isPrimary = Boolean(row.is_primary);
+  return {
+    id: row.id,
+    name: row.name,
+    city: row.city,
+    date: row.event_date,
+    venue: row.venue,
+    status: row.status,
+    playerTarget: row.player_target,
+    clubTarget: row.club_target,
+    sponsorTarget: row.sponsor_target,
+    digitalAudienceTarget: row.digital_audience_target,
+    checklist: (row.checklist ?? []) as EventChecklistItem[],
+    isPrimary,
+    playersConfirmed: isPrimary && primaryKpis ? primaryKpis.playersConfirmed : 0,
+    clubsConfirmed: isPrimary && primaryKpis ? primaryKpis.clubPartners : 0,
+    sponsorsConfirmed: isPrimary && primaryKpis ? primaryKpis.sponsorsWon : 0,
+    commercialPipeline: isPrimary && primaryKpis ? primaryKpis.sponsorPipeline : 0,
+  };
+}
+
+export async function getEvents(): Promise<LiveResult<PannaEvent>> {
+  if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
+  try {
+    const { data, error } = await getSupabaseServerClient().from("events").select("*").order("created_at", { ascending: true });
+    if (error) {
+      console.error("Supabase getEvents error:", error.message);
+      return { data: [], source: "unavailable" };
+    }
+    const rows = data ?? [];
+    const hasPrimary = rows.some((r) => r.is_primary);
+    const primaryKpis = hasPrimary ? await getLiveDashboardKpis() : null;
+    return { data: rows.map((r) => rowToEvent(r, primaryKpis)), source: "live" };
+  } catch (err) {
+    console.error("Supabase getEvents failed:", err);
+    return { data: [], source: "unavailable" };
+  }
+}
+
+export async function createEvent(entry: {
+  name: string;
+  city: string;
+  venue: string | null;
+  date: string | null;
+  playerTarget: number;
+  clubTarget: number;
+  sponsorTarget: number;
+  digitalAudienceTarget: number;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const id = `event-${crypto.randomUUID()}`;
+  const { error } = await getSupabaseServerClient()
+    .from("events")
+    .insert({
+      id,
+      name: entry.name,
+      city: entry.city,
+      venue: entry.venue,
+      event_date: entry.date,
+      status: "PRE_LAUNCH",
+      player_target: entry.playerTarget,
+      club_target: entry.clubTarget,
+      sponsor_target: entry.sponsorTarget,
+      digital_audience_target: entry.digitalAudienceTarget,
+      checklist: [],
+      is_primary: false,
+    });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function updateEvent(
+  id: string,
+  entry: {
+    name: string;
+    city: string;
+    venue: string | null;
+    date: string | null;
+    status: string;
+    playerTarget: number;
+    clubTarget: number;
+    sponsorTarget: number;
+    digitalAudienceTarget: number;
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const { error } = await getSupabaseServerClient()
+    .from("events")
+    .update({
+      name: entry.name,
+      city: entry.city,
+      venue: entry.venue,
+      event_date: entry.date,
+      status: entry.status,
+      player_target: entry.playerTarget,
+      club_target: entry.clubTarget,
+      sponsor_target: entry.sponsorTarget,
+      digital_audience_target: entry.digitalAudienceTarget,
+    })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function deleteEvent(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const { error } = await getSupabaseServerClient().from("events").delete().eq("id", id).eq("is_primary", false);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function toggleEventChecklistItem(eventId: string, itemId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const supabase = getSupabaseServerClient();
+  const { data: existing, error: fetchError } = await supabase.from("events").select("checklist").eq("id", eventId).single();
+  if (fetchError || !existing) return { ok: false, error: fetchError?.message ?? "Event not found." };
+
+  const checklist = ((existing.checklist ?? []) as EventChecklistItem[]).map((item) =>
+    item.id === itemId ? { ...item, done: !item.done } : item
+  );
+  const { error } = await supabase.from("events").update({ checklist }).eq("id", eventId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function addEventChecklistItem(eventId: string, label: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const supabase = getSupabaseServerClient();
+  const { data: existing, error: fetchError } = await supabase.from("events").select("checklist").eq("id", eventId).single();
+  if (fetchError || !existing) return { ok: false, error: fetchError?.message ?? "Event not found." };
+
+  const checklist = [...((existing.checklist ?? []) as EventChecklistItem[]), { id: `chk-${crypto.randomUUID()}`, label, done: false }];
+  const { error } = await supabase.from("events").update({ checklist }).eq("id", eventId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

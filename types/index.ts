@@ -350,23 +350,30 @@ export interface EventChecklistItem {
   done: boolean;
 }
 
+export type EventStatus = "PRE_LAUNCH" | "ANNOUNCED" | "REGISTRATION_OPEN" | "LIVE" | "COMPLETED";
+
 export interface PannaEvent {
   id: string;
   name: string;
-  city: SwissCity;
-  date: string | null;
+  city: string;
+  date: string | null; // ISO date, real once set — never a placeholder
   venue: string | null;
-  status: "PRE_LAUNCH" | "ANNOUNCED" | "REGISTRATION_OPEN" | "LIVE" | "COMPLETED";
+  status: EventStatus;
   playerTarget: number;
-  playersConfirmed: number;
   clubTarget: number;
-  clubsConfirmed: number;
   sponsorTarget: number;
-  sponsorsConfirmed: number;
   digitalAudienceTarget: number;
-  estimatedReach: number;
-  commercialPipeline: number;
   checklist: EventChecklistItem[];
+  // True for exactly one event — recruitment isn't split per event yet
+  // (one shared player/club/sponsor pipeline), so confirmed-count and
+  // commercial-pipeline stats are only computed for this one; any other
+  // event honestly starts at zero rather than reusing or guessing numbers.
+  isPrimary: boolean;
+  // Only populated for the primary event — see above.
+  playersConfirmed: number;
+  clubsConfirmed: number;
+  sponsorsConfirmed: number;
+  commercialPipeline: number;
 }
 
 // ── Campaign (outreach campaigns grouping) ──────────────────

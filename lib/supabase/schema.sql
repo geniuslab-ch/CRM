@@ -184,6 +184,36 @@ create table if not exists content_ideas (
   created_at timestamptz not null default now()
 );
 
+-- Real events — the Event Control Center's data. Player/club/sponsor
+-- recruitment isn't split per event yet (there's one shared pipeline), so
+-- confirmed-count stats are only shown for the "primary" event (exactly
+-- one row with is_primary = true) — any other event honestly starts at
+-- zero confirmed rather than reusing or guessing numbers. checklist is a
+-- jsonb array of {id, label, done}, toggled for real from the CRM.
+create table if not exists events (
+  id text primary key,
+  name text not null,
+  city text not null,
+  venue text,
+  event_date date,
+  status text not null default 'PRE_LAUNCH',
+  player_target int not null default 32,
+  club_target int not null default 10,
+  sponsor_target int not null default 8,
+  digital_audience_target int not null default 10000,
+  checklist jsonb not null default '[]'::jsonb,
+  is_primary boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- The one real event this whole CRM has been built around so far —
+-- Panna League First, Lausanne. Format (32 players / 1v1) and targets are
+-- real organizer goals, not measurements; date/venue stay null (genuinely
+-- TBD) until set for real from the Event Control Center.
+insert into events (id, name, city, venue, event_date, status, player_target, club_target, sponsor_target, digital_audience_target, is_primary)
+values ('event-lausanne-001', 'Panna League First', 'Lausanne', null, null, 'PRE_LAUNCH', 32, 10, 8, 10000, true)
+on conflict (id) do nothing;
+
 -- Lock every table down by default: only the service_role key (used
 -- server-side only, never shipped to the browser) can read or write.
 -- The anon key gets zero access unless you explicitly add a policy.
@@ -194,3 +224,4 @@ alter table conversations enable row level security;
 alter table meetings enable row level security;
 alter table content_ideas enable row level security;
 alter table inbox_poll_state enable row level security;
+alter table events enable row level security;

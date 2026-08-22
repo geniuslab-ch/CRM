@@ -2,15 +2,22 @@
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { agents } from "@/lib/data/agents";
+import { Agent } from "@/types";
 
-const data = agents.map((a) => ({ name: a.name, tasks: a.tasksCompleted }));
+// Real per-agent output — each agent's live metricValue (players
+// analyzed, clubs identified, prospects found, companies researched,
+// messages sent, replies classified, meetings booked, content ideas —
+// all plain counts, so comparable on one axis) computed by
+// lib/agents/liveTeam.ts. There's no real per-action task log yet, so
+// this replaces the old "tasks completed" chart, which had no backing
+// data source at all.
+export function AgentProductivityChart({ agents }: { agents: Agent[] }) {
+  const data = agents.map((a) => ({ name: a.name, output: Number(a.metricValue) || 0 }));
 
-export function AgentProductivityChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI productivity — tasks completed per agent</CardTitle>
+        <CardTitle>AI team output — real counts per agent</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-72 w-full">
@@ -38,7 +45,7 @@ export function AgentProductivityChart() {
                   fontSize: 12,
                 }}
               />
-              <Bar dataKey="tasks" fill="#a3e635" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="output" fill="#a3e635" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

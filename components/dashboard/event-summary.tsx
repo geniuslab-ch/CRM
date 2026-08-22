@@ -1,13 +1,22 @@
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { pannaEvent } from "@/lib/data/event";
-import { getLiveDashboardKpis } from "@/lib/supabase/repository";
+import { getEvents } from "@/lib/supabase/repository";
 import { formatCHF } from "@/lib/utils";
 
 export async function EventSummary() {
-  const e = pannaEvent;
-  const kpis = await getLiveDashboardKpis();
+  const { data: events } = await getEvents();
+  const e = events.find((ev) => ev.isPrimary) ?? events[0] ?? null;
+
+  if (!e) {
+    return (
+      <Card className="p-5">
+        <p className="text-sm text-muted-foreground">
+          No event set up yet — create one in the Event Control Center.
+        </p>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-5">
@@ -22,18 +31,14 @@ export async function EventSummary() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Metric
           label="Players"
-          value={`${kpis.playersConfirmed} / ${e.playerTarget}`}
-          progress={(kpis.playersConfirmed / e.playerTarget) * 100}
+          value={`${e.playersConfirmed} / ${e.playerTarget}`}
+          progress={(e.playersConfirmed / e.playerTarget) * 100}
         />
-        <Metric
-          label="Clubs"
-          value={`${kpis.clubPartners} confirmed`}
-          progress={(kpis.clubPartners / e.clubTarget) * 100}
-        />
+        <Metric label="Clubs" value={`${e.clubsConfirmed} confirmed`} progress={(e.clubsConfirmed / e.clubTarget) * 100} />
         <Metric
           label="Sponsors"
-          value={`${kpis.sponsorsWon} confirmed`}
-          progress={(kpis.sponsorsWon / e.sponsorTarget) * 100}
+          value={`${e.sponsorsConfirmed} confirmed`}
+          progress={(e.sponsorsConfirmed / e.sponsorTarget) * 100}
         />
         <div>
           <p className="text-xs text-muted-foreground">Digital reach</p>
@@ -44,7 +49,7 @@ export async function EventSummary() {
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3">
         <p className="text-sm text-muted-foreground">Commercial pipeline</p>
-        <p className="font-display text-lg font-bold text-primary">{formatCHF(kpis.sponsorPipeline)}</p>
+        <p className="font-display text-lg font-bold text-primary">{formatCHF(e.commercialPipeline)}</p>
       </div>
     </Card>
   );

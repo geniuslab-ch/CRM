@@ -2,7 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { createContentIdea, updateContentIdeaStatus, deleteContentIdea, markConversationRead } from "./repository";
+import {
+  createContentIdea,
+  updateContentIdeaStatus,
+  deleteContentIdea,
+  markConversationRead,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  toggleEventChecklistItem,
+  addEventChecklistItem,
+} from "./repository";
 import { ContentOpportunity, ContentStatus } from "@/types";
 
 export async function markConversationAsRead(relatedId: string): Promise<void> {
@@ -333,5 +343,84 @@ export async function removeContentIdea(id: string): Promise<ActionResult> {
   const result = await deleteContentIdea(id);
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/content");
+  return { ok: true };
+}
+
+export async function addEvent(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+
+  const name = str(formData, "name");
+  const city = str(formData, "city");
+  if (!name || !city) return { ok: false, error: "Event name and city are required." };
+
+  const result = await createEvent({
+    name,
+    city,
+    venue: str(formData, "venue") || null,
+    date: str(formData, "date") || null,
+    playerTarget: num(formData, "playerTarget", 32),
+    clubTarget: num(formData, "clubTarget", 10),
+    sponsorTarget: num(formData, "sponsorTarget", 8),
+    digitalAudienceTarget: num(formData, "digitalAudienceTarget", 10000),
+  });
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/event");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function updateEventAction(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+
+  const id = str(formData, "id");
+  const name = str(formData, "name");
+  const city = str(formData, "city");
+  if (!id) return { ok: false, error: "Missing event id." };
+  if (!name || !city) return { ok: false, error: "Event name and city are required." };
+
+  const result = await updateEvent(id, {
+    name,
+    city,
+    venue: str(formData, "venue") || null,
+    date: str(formData, "date") || null,
+    status: str(formData, "status") || "PRE_LAUNCH",
+    playerTarget: num(formData, "playerTarget", 32),
+    clubTarget: num(formData, "clubTarget", 10),
+    sponsorTarget: num(formData, "sponsorTarget", 8),
+    digitalAudienceTarget: num(formData, "digitalAudienceTarget", 10000),
+  });
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/event");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function removeEvent(id: string): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const result = await deleteEvent(id);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/event");
+  return { ok: true };
+}
+
+export async function toggleChecklistItem(eventId: string, itemId: string): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const result = await toggleEventChecklistItem(eventId, itemId);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/event");
+  return { ok: true };
+}
+
+export async function addChecklistItem(eventId: string, label: string): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  if (!label.trim()) return { ok: false, error: "Checklist item can't be empty." };
+  const result = await addEventChecklistItem(eventId, label.trim());
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/event");
   return { ok: true };
 }
