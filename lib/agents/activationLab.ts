@@ -133,6 +133,8 @@ export async function generateActivation(sponsor: Sponsor): Promise<ActivationCo
     "(3) Does Panna genuinely make the idea better, or is Panna just a logo placement? If just a logo, reject it.",
     "(4) Would people actually want to participate? (5) Would it create real social content? (6) Is it realistically",
     "executable? (7) Can the sponsor measure something concrete (participants, views, QR scans, mentions, trial)?",
+    "Keep the internal three-concept comparison and the quality-test check brief (a short mental pass, not a written-out",
+    "essay) — spend your effort on making the final JSON excellent, not on narrating your process.",
     SAFETY_RULE,
   ].join(" ");
 
@@ -143,15 +145,29 @@ export async function generateActivation(sponsor: Sponsor): Promise<ActivationCo
     conceptSchema(),
   ].join(" ");
 
-  const response = await client().messages.create({
-    model: model(),
-    max_tokens: 16000,
-    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
-    system,
-    messages: [{ role: "user", content: user }],
-  });
+  // Streamed rather than a plain create(): the SDK refuses a non-streaming
+  // call at this max_tokens size ("Streaming is required for operations
+  // that may take longer than 10 minutes"), and this deep a research +
+  // ideation pass genuinely can take a while.
+  const response = await client()
+    .messages.stream({
+      model: model(),
+      max_tokens: 26000,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
+      system,
+      messages: [{ role: "user", content: user }],
+    })
+    .finalMessage();
 
-  return toConcept(extractJsonObject(extractText(response)));
+  const concept = toConcept(extractJsonObject(extractText(response)));
+  if (!concept.activationName || concept.activationName === "Untitled concept" || !concept.activationDescription) {
+    throw new Error(
+      response.stop_reason === "max_tokens"
+        ? "The research ran out of room before finishing — try again."
+        : "Couldn't parse a usable activation concept from the AI response — try again."
+    );
+  }
+  return concept;
 }
 
 export type ActivationDirection = "regenerate" | "guerrilla" | "cheaper" | "bigger" | "social" | "premium" | "sporting";
@@ -209,12 +225,15 @@ export async function transformActivation(
 
   const response = await client().messages.create({
     model: model(),
-    max_tokens: 3000,
+    max_tokens: 6000,
     system,
     messages: [{ role: "user", content: user }],
   });
 
   const result = toConcept(extractJsonObject(extractText(response)));
+  if (!result.activationName || result.activationName === "Untitled concept" || !result.activationDescription) {
+    throw new Error("Couldn't parse a usable activation concept from the AI response — try again.");
+  }
   // Preserve grounded research facts/sources exactly if the model omitted them.
   return {
     ...result,
@@ -270,14 +289,18 @@ export async function generateActivationEmail(sponsor: Sponsor, activation: Acti
 
   const response = await client().messages.create({
     model: model(),
-    max_tokens: 1200,
+    max_tokens: 2000,
     system,
     messages: [{ role: "user", content: user }],
   });
 
   const raw = extractJsonObject(extractText(response));
+  const body = str(raw, "body");
+  if (!body) {
+    throw new Error("Couldn't generate the email body — try again.");
+  }
   return {
     subject: str(raw, "subject") || `An idea for ${sponsor.name} × Panna`,
-    body: str(raw, "body"),
+    body,
   };
 }
