@@ -50,8 +50,12 @@ create table if not exists sponsors (
   next_action text not null,
   research jsonb not null,
   ai_recommendation text not null,
+  activation jsonb,
   created_at timestamptz not null default now()
 );
+
+-- Safe to run against an already-created sponsors table too.
+alter table sponsors add column if not exists activation jsonb;
 
 -- Real activity log — one row per real outbound message actually sent
 -- through the Outreach Agent. No inbound replies yet (that needs a mailbox

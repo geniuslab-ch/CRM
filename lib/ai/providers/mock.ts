@@ -1,34 +1,8 @@
-import { AIProvider, ClassificationResult, ContentIdeaDraft, OutreachRequest, OutreachResult } from "../provider";
-import { brandVoice } from "@/lib/data/brand";
-
-const OPENERS: Record<OutreachRequest["category"], string[]> = {
-  PLAYER: ["We've been watching your moves", "Your name keeps coming up in our scouting"],
-  CLUB: ["We're building the Panna League Switzerland roster", "We're scouting players across the region"],
-  SPONSOR: ["Panna League Switzerland is building its founding partner lineup", "We're putting together our sponsor lineup for launch"],
-  MEDIA: ["We're building the media program for Panna League Switzerland"],
-};
+import { AIProvider, ClassificationResult, ContentIdeaDraft } from "../provider";
 
 export class MockAIProvider implements AIProvider {
   readonly name = "Mock AI";
   readonly isMock = true;
-
-  async generateOutreach(req: OutreachRequest): Promise<OutreachResult> {
-    const opener = OPENERS[req.category][0];
-    const tone = brandVoice.tone.join(", ").toLowerCase();
-    const message = `Hi ${req.targetName.split(" ")[0]},\n\n${opener} — ${req.researchInsight} ${req.personalizationAngle}\n\nPanna League Switzerland is a live street-football competition with a strong digital content engine. ${
-      req.category === "SPONSOR"
-        ? "We'd love to explore a partnership that puts your brand in front of a highly engaged, youth-focused audience — on-site and across social."
-        : req.category === "CLUB"
-        ? "We're recruiting players first — no commercial ask here, just looking for standout talent from your squad."
-        : "We think you'd be a great fit for the roster."
-    }\n\n${brandVoice.preferredCta}\n\n— Panna League Team`;
-
-    return {
-      researchInsight: req.researchInsight,
-      personalizationAngle: req.personalizationAngle,
-      message,
-    };
-  }
 
   async classifyReply(replyText: string): Promise<ClassificationResult> {
     const lower = replyText.toLowerCase();

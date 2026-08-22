@@ -147,6 +147,33 @@ export interface Sponsor {
   nextAction: string;
   research: SponsorResearch;
   aiRecommendation: string;
+  activation: ActivationConcept | null;
+}
+
+// ── AI Activation Lab ────────────────────────────────────────
+// A "brand territory → Panna asset → activation idea" concept, not a
+// generic sponsorship pitch. Doubles as the internal "Sponsor
+// Intelligence Card" and the sponsor-detail-page display data.
+
+export type ActivationDifficulty = "LOW" | "MEDIUM" | "HIGH";
+
+export interface ActivationConcept {
+  brandTerritory: string;
+  currentCampaign: string;
+  audience: string;
+  marketingObjective: string;
+  pannaConnection: string;
+  activationName: string;
+  activationDescription: string;
+  whyTheyWouldCare: string;
+  whyPeopleWouldCare: string;
+  contentPotential: string;
+  deliverables: string[];
+  executionDifficulty: ActivationDifficulty;
+  sponsorshipFit: number; // 0-100
+  guerrillaPotential: number; // 0-100
+  sources: string[];
+  generatedAt: string; // ISO timestamp
 }
 
 // ── Sponsorship opportunity / proposal ─────────────────────

@@ -1,6 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { AIProvider, ClassificationResult, ContentIdeaDraft, OutreachRequest, OutreachResult } from "../provider";
+import { AIProvider, ClassificationResult, ContentIdeaDraft } from "../provider";
 import { brandVoice } from "@/lib/data/brand";
 
 // Real AI provider — wired to the Claude API via the Anthropic SDK.
@@ -37,43 +37,6 @@ export class ClaudeAIProvider implements AIProvider {
     // `ant auth login` profile) from the environment automatically.
     this.client = new Anthropic(options?.apiKey ? { apiKey: options.apiKey } : {});
     this.model = options?.model ?? process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
-  }
-
-  async generateOutreach(req: OutreachRequest): Promise<OutreachResult> {
-    const system = [
-      baseSystemPrompt(),
-      "Write a short, personalized outreach message (120-180 words) for the Outreach Agent.",
-      "Never write a generic template — always reference the specific research insight and personalization angle given.",
-      req.category === "CLUB"
-        ? "This is a club — lead with player recruitment, never a commercial partnership ask."
-        : req.category === "SPONSOR"
-        ? "This is a sponsorship prospect — connect Panna League's audience and format to their brand goals."
-        : "Write for a prospective player or media contact as appropriate.",
-      "Return ONLY the message text — no preamble, no markdown, no quotation marks around it.",
-    ].join(" ");
-
-    const user = [
-      `Recipient: ${req.targetName} at ${req.organization}.`,
-      `Category: ${req.category}.`,
-      `Research insight: ${req.researchInsight}`,
-      `Personalization angle: ${req.personalizationAngle}`,
-    ].join("\n");
-
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 1024,
-      output_config: { effort: "low" },
-      system,
-      messages: [{ role: "user", content: user }],
-    });
-
-    const message = extractText(response).trim();
-
-    return {
-      researchInsight: req.researchInsight,
-      personalizationAngle: req.personalizationAngle,
-      message: message || "(Claude returned an empty response — try again.)",
-    };
   }
 
   async classifyReply(replyText: string): Promise<ClassificationResult> {

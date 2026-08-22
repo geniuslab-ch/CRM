@@ -229,6 +229,7 @@ export function generateSponsors(count = 50): Sponsor[] {
           : overall >= 55
           ? "Moderate fit — pursue after top-tier prospects."
           : "Low priority — revisit if budget allows.",
+      activation: null,
     });
   }
 

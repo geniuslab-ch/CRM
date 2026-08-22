@@ -2,7 +2,6 @@ import "server-only";
 import * as React from "react";
 import { Document, Page, View, Text, StyleSheet, Svg, Rect, Path } from "@react-pdf/renderer";
 import { Sponsor, SponsorshipTier } from "@/types";
-import { formatCHF } from "@/lib/utils";
 
 // Brand tokens mirrored from app/globals.css (hsl(84 92% 55%) etc.) — PDF
 // rendering can't read CSS custom properties, so the hex equivalents are
@@ -64,11 +63,8 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 20,
   },
-  tierTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   tierName: { fontSize: 8.5, fontFamily: "Helvetica-Bold", color: COLOR.accent, letterSpacing: 1.2 },
   tierTagline: { fontSize: 9.5, color: COLOR.muted, marginTop: 3 },
-  tierValue: { fontSize: 22, fontFamily: "Helvetica-Bold" },
-  tierValueLabel: { fontSize: 7, color: COLOR.muted, letterSpacing: 1, textAlign: "right", marginBottom: 2 },
 
   sectionTitle: {
     fontSize: 9.5,
@@ -198,16 +194,8 @@ export function ProposalDocument({ sponsor, tier }: { sponsor: Sponsor; tier: Sp
           </View>
 
           <View style={styles.tierCard}>
-            <View style={styles.tierTopRow}>
-              <View>
-                <Text style={styles.tierName}>{tier.name.toUpperCase()}</Text>
-                <Text style={styles.tierTagline}>{tier.tagline}</Text>
-              </View>
-              <View>
-                <Text style={styles.tierValueLabel}>ESTIMATED VALUE</Text>
-                <Text style={styles.tierValue}>{formatCHF(tier.estimatedValue)}</Text>
-              </View>
-            </View>
+            <Text style={styles.tierName}>{tier.name.toUpperCase()}</Text>
+            <Text style={styles.tierTagline}>{tier.tagline}</Text>
           </View>
 
           <View style={styles.section}>

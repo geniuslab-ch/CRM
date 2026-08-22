@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus } from "@/types";
+import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus, ActivationConcept } from "@/types";
 import { PlayerCandidate, ClubCandidate, SponsorCandidate, SponsorProfileUpdate } from "@/lib/agents/prospectResearch";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
@@ -78,6 +78,7 @@ function rowToSponsor(row: any): Sponsor {
     nextAction: row.next_action,
     research: row.research,
     aiRecommendation: row.ai_recommendation,
+    activation: row.activation ?? null,
   };
 }
 
@@ -479,6 +480,16 @@ export async function updateSponsorResearch(id: string, update: SponsorProfileUp
       last_activity_date: new Date().toISOString(),
     })
     .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// AI Activation Lab concept — the sponsor's "brand territory → activation
+// idea" state (see lib/agents/activationLab.ts). Stored whole, since it's
+// always regenerated/transformed as one unit, never partially edited.
+export async function updateSponsorActivation(id: string, activation: ActivationConcept): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const { error } = await getSupabaseServerClient().from("sponsors").update({ activation }).eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
