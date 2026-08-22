@@ -35,7 +35,7 @@ export class MockAIProvider implements AIProvider {
       title: trigger,
       platform: "Instagram",
       hook: `This is why "${trigger}" matters.`,
-      caption: `Content idea generated from: ${trigger}. (Mock AI — set ANTHROPIC_API_KEY and NEXT_PUBLIC_AI_MODE=live for a real draft.)`,
+      caption: `Content idea generated from: ${trigger}. (Mock AI — set ANTHROPIC_API_KEY for a real draft.)`,
       cta: "Follow for more.",
       suggestedFootage: "Relevant clip or photo from the event",
       sponsorIntegration: null,

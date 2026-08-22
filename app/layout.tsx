@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/layout/app-shell";
+import { isAIModeLive } from "@/lib/ai";
 
 export const metadata: Metadata = {
   title: "Panna League AI Command Center",
@@ -12,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <body className="font-sans antialiased">
-        <AppShell>{children}</AppShell>
+        <AppShell aiLive={isAIModeLive()}>{children}</AppShell>
       </body>
     </html>
   );

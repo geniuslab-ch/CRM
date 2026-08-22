@@ -5,10 +5,8 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
-export function Sidebar() {
+export function Sidebar({ aiLive }: { aiLive: boolean }) {
   const pathname = usePathname();
-  // NEXT_PUBLIC_ vars are inlined at build time, safe to read client-side.
-  const aiLive = process.env.NEXT_PUBLIC_AI_MODE === "live";
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-surface lg:flex">

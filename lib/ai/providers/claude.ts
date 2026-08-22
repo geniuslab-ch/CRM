@@ -11,8 +11,8 @@ import { brandVoice } from "@/lib/data/brand";
 // Next.js route handlers under /app/api/ai/*, which import this file
 // server-side and never expose the API key to the browser.
 //
-// Activate by setting ANTHROPIC_API_KEY and NEXT_PUBLIC_AI_MODE=live in
-// your environment — see .env.example and README.md.
+// Activate by setting ANTHROPIC_API_KEY in your environment — see
+// .env.example and README.md.
 
 const DEFAULT_MODEL = "claude-opus-5";
 

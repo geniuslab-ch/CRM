@@ -176,7 +176,7 @@ export default async function SponsorDetailPage({ params }: { params: { id: stri
               <CardTitle>AI recommendation</CardTitle>
             </CardHeader>
             <CardContent>
-              <Why>{sponsor.aiRecommendation}</Why>
+              <p className="text-sm text-muted-foreground">{sponsor.aiRecommendation}</p>
             </CardContent>
           </Card>
 

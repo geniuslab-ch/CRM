@@ -102,7 +102,7 @@ Copy `.env.example` to `.env.local` if you want to start wiring up real integrat
 cp .env.example .env.local
 ```
 
-Key variable: `NEXT_PUBLIC_AI_MODE` — `mock` (default) or `live`.
+Key variable: `ANTHROPIC_API_KEY` — set it to go live, leave it unset to stay on Mock AI. See §9.
 
 **Login gate:** the whole app sits behind a single shared Admin passcode (`middleware.ts` + `lib/auth.ts`), not the mock-mode toggle above — it's on regardless of AI mode. Set `APP_PASSCODE` (whatever passcode you want) and `APP_SESSION_SECRET` (any random string — signs the login session cookie) in `.env.local`; without both set, `/api/auth/login` returns an error and nobody can log in. Deploying this to a real host means setting these two variables there too, the same way as every other secret in this section — `.env.local` never leaves your machine/session.
 
@@ -112,23 +112,22 @@ Every "AI" behavior in this prototype — scoring, research, reply classificatio
 
 - The app looks and behaves identically for every visitor and every reload (great for demos).
 - Nothing calls an external API, so there is nothing to configure and nothing that can fail due to rate limits or missing keys.
-- Mock mode still fully applies to the Conversation Center's reply composer and to any outreach sent while `ANTHROPIC_API_KEY`/`GOOGLE_REFRESH_TOKEN` aren't set. The Sponsor Detail page's Outreach Agent **SEND** button, however, is real once Gmail is configured (§12) — it dispatches an actual email via `/api/email/send`, not a simulation. Watch for the placeholder-email warning it shows before sending to seed/demo contacts.
+- Mock mode still fully applies to the Conversation Center's reply composer and content ideation while `ANTHROPIC_API_KEY` isn't set. The Sponsor Detail page's AI Activation Lab and Booking widget, however, are real once their keys are configured (§9, §12) — they dispatch actual Claude web-search calls and actual emails via `/api/email/send`, not a simulation. Watch for the placeholder-email warning shown before sending to a contact with no real email on file.
 
 ## 9. Real AI mode (Claude API) — already wired up
 
-`lib/ai/providers/claude.ts` is a **working implementation**, not a stub — it calls the real Claude API via `@anthropic-ai/sdk` for outreach generation, reply classification and content ideation. To turn it on:
+`lib/ai/providers/claude.ts`, `lib/agents/prospectResearch.ts` and `lib/agents/activationLab.ts` are **working implementations**, not stubs — they call the real Claude API via `@anthropic-ai/sdk` for reply classification, content ideation, real web-search prospecting (Run AI Team), the Researcher agent's deep company briefs, and the AI Activation Lab's brand-strategist activation concepts + emails. To turn it on:
 
 1. Get an API key at [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) (new accounts get a small free credit grant; usage beyond that is pay-per-token — see cost note below).
 2. In `.env.local`, set:
    ```
    ANTHROPIC_API_KEY=sk-ant-...
-   NEXT_PUBLIC_AI_MODE=live
    ```
-3. Restart `npm run dev`. The Sponsor Detail page's Outreach Agent now calls Claude and shows **"via Claude AI"** on the generated message instead of "via Mock AI".
+3. Restart `npm run dev` (or redeploy). Every AI feature is now live — the sidebar's "Claude AI — Live" status reflects this.
 
-**Why this required a server route, not just a provider swap:** an API key must never reach the browser. `lib/ai/providers/claude.ts` and `lib/ai/index.ts` are marked `import "server-only"` — Next.js will fail the build if a client component ever imports them. Client components instead call `POST /app/api/ai/outreach` (and `/api/ai/classify`, `/api/ai/content-idea`, wired for future use), a server Route Handler that reads `ANTHROPIC_API_KEY` from `process.env` and returns only the result. If `NEXT_PUBLIC_AI_MODE` isn't `live` or the key is missing, `getAIProvider()` transparently falls back to `MockAIProvider` — the app never breaks from a missing key.
+**Why this required a server route, not just a provider swap:** an API key must never reach the browser. `lib/ai/providers/claude.ts`, `lib/ai/index.ts`, `lib/agents/prospectResearch.ts` and `lib/agents/activationLab.ts` are all marked `import "server-only"` — Next.js will fail the build if a client component ever imports them. Client components instead call server Route Handlers under `/app/api/ai/*` that read `ANTHROPIC_API_KEY` from `process.env` and return only the result. If the key is missing, classification/content ideation transparently fall back to `MockAIProvider` (the app never breaks from a missing key), while the prospecting/research/activation routes return a clear "not configured" error instead of faking a response.
 
-**Model & cost:** defaults to `claude-opus-5` (override with `ANTHROPIC_MODEL`, e.g. `claude-sonnet-5` for a cheaper/faster option well-suited to this kind of short text generation — see pricing in the Anthropic docs). Each outreach message is a few hundred input/output tokens, so cost per generation is a small fraction of a cent to a few cents depending on the model.
+**Model & cost:** defaults to `claude-opus-5` (override with `ANTHROPIC_MODEL`, e.g. `claude-sonnet-5` for a cheaper/faster option). Classification/content-idea calls are a few hundred input/output tokens each (a small fraction of a cent). The web-search-backed calls (prospecting, Researcher, Activation Lab) run several search rounds and can generate a few thousand output tokens for a genuinely deep result — budget a few cents per call, not fractions of a cent.
 
 ## 10. Real AI integration roadmap — what's left
 

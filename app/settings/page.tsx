@@ -84,13 +84,12 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            The application runs on <span className="font-semibold text-foreground">Mock AI</span> by default — realistic
-            predefined responses, no API keys required. To switch the Outreach Agent to live Claude generation, set{" "}
-            <code className="rounded bg-surface-2 px-1.5 py-0.5">ANTHROPIC_API_KEY</code> and{" "}
-            <code className="rounded bg-surface-2 px-1.5 py-0.5">NEXT_PUBLIC_AI_MODE=live</code> in your environment and restart
-            the server — <code className="rounded bg-surface-2 px-1.5 py-0.5">lib/ai/providers/claude.ts</code> is already wired
-            up, no code changes required. The Sponsor Detail page&apos;s outreach composer will show &ldquo;via Claude AI&rdquo;
-            once live mode is active.
+            The whole app is gated by a single switch: set{" "}
+            <code className="rounded bg-surface-2 px-1.5 py-0.5">ANTHROPIC_API_KEY</code> in your environment and
+            redeploy to go live. It powers reply classification, content idea generation, real web-search
+            prospecting (Run AI Team), the Researcher agent and the AI Activation Lab. Without it, classification and
+            content ideas fall back to a clearly-labeled Mock AI, and the prospecting/research/activation features
+            are disabled outright rather than faked — see the sidebar status below.
           </p>
         </CardContent>
       </Card>
