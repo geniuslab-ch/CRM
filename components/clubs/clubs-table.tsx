@@ -17,11 +17,18 @@ import { EditClubDialog } from "./edit-club-dialog";
 const STATUSES = ["ALL", "IDENTIFIED", "CONTACTED", "INTERESTED", "PLAYERS_PROPOSED", "CONFIRMED", "PARTNER"];
 const POTENTIALS = ["ALL", "LOW", "MEDIUM", "HIGH"];
 
+const KIND_TABS = [
+  { value: "ALL" as const, label: "All" },
+  { value: "CLUB" as const, label: "Clubs" },
+  { value: "SCHOOL" as const, label: "Schools" },
+];
+
 export function ClubsTable({ clubs }: { clubs: Club[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [city, setCity] = useState("ALL");
   const [potential, setPotential] = useState("ALL");
+  const [kind, setKind] = useState<"ALL" | "CLUB" | "SCHOOL">("ALL");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -36,16 +43,34 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
 
   const filtered = useMemo(() => {
     return clubs.filter((c) => {
+      if (kind !== "ALL" && c.kind !== kind) return false;
       if (status !== "ALL" && c.status !== status) return false;
       if (city !== "ALL" && c.city !== city) return false;
       if (potential !== "ALL" && c.potential !== potential) return false;
       if (query && !c.name.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
     });
-  }, [clubs, query, status, city, potential]);
+  }, [clubs, query, status, city, potential, kind]);
 
   return (
     <div className="space-y-4">
+      <div className="flex gap-1.5 rounded-lg border border-border bg-surface-2 p-1 sm:w-fit">
+        {KIND_TABS.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setKind(t.value)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              kind === t.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.label}
+            <span className="ml-1.5 opacity-70">
+              {t.value === "ALL" ? clubs.length : clubs.filter((c) => c.kind === t.value).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -107,9 +132,12 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
               {filtered.map((c) => (
                 <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-2/60">
                   <td className="px-4 py-3">
-                    <Link href={`/clubs/${c.id}`} className="font-medium hover:text-primary hover:underline">
-                      {c.name}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/clubs/${c.id}`} className="font-medium hover:text-primary hover:underline">
+                        {c.name}
+                      </Link>
+                      {c.kind === "SCHOOL" && <Badge variant="accent">School</Badge>}
+                    </div>
                     {c.website && (
                       <a href={c.website} className="text-xs text-muted-foreground hover:text-primary" target="_blank" rel="noreferrer">
                         {c.website.replace("https://", "")}

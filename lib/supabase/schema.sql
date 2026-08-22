@@ -61,7 +61,8 @@ create table if not exists clubs (
   instagram text,
   tiktok text,
   inquiry_message text,
-  signup_source text
+  signup_source text,
+  kind text not null default 'CLUB'
 );
 
 -- Safe to run against an already-created clubs table too — adds the
@@ -73,6 +74,13 @@ alter table clubs add column if not exists instagram text;
 alter table clubs add column if not exists tiktok text;
 alter table clubs add column if not exists inquiry_message text;
 alter table clubs add column if not exists signup_source text;
+
+-- CLUB or SCHOOL — a real, top-level distinction, not just a label.
+-- Schools get their own outreach tone/copy (a PE-department pitch, not a
+-- "does your club have what it takes" challenge) and their own filter on
+-- the Clubs page, while sharing the same table/pipeline/booking/contacts
+-- machinery since the underlying record shape is identical.
+alter table clubs add column if not exists kind text not null default 'CLUB';
 
 -- Up to 3 real contacts: jsonb array of {name, email, role?, isPrimary}.
 -- contact_name/contact_email above always mirror whichever one is

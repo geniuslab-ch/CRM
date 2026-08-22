@@ -91,9 +91,16 @@ export type ClubStatus =
 
 export type ClubPotential = "LOW" | "MEDIUM" | "HIGH";
 
+// A school is approached completely differently from a football club — a
+// PE-department pitch to nominate students, not a "does your club have
+// what it takes" challenge to a coach — so it's a real, top-level split,
+// not just a label. Both share the same record shape/pipeline/booking.
+export type ClubKind = "CLUB" | "SCHOOL";
+
 export interface Club {
   id: string;
   name: string;
+  kind: ClubKind;
   city: SwissCity;
   contactName: string;
   contactEmail: string;

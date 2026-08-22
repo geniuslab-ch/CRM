@@ -12,8 +12,8 @@ export default async function ClubsPage() {
   return (
     <div>
       <PageHeader
-        title="Club Database"
-        description="The Club Finder agent identifies clubs that can supply players or become partners. First contact always leads with player recruitment — commercial partnership is only introduced once a relationship is established."
+        title="Clubs & Schools"
+        description="Football clubs and schools both feed the same player pipeline, but need a different pitch — clubs get a competitive challenge to their coach, schools get a PE-department pitch to nominate students. Toggle below to filter."
         action={
           <div className="flex items-center gap-2">
             <DataSourceBadge source={source} />

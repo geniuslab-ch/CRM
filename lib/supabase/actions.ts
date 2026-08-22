@@ -167,6 +167,7 @@ export async function addClub(_prevState: ActionResult, formData: FormData): Pro
     .insert({
       id,
       name,
+      kind: str(formData, "kind") === "SCHOOL" ? "SCHOOL" : "CLUB",
       city,
       contact_name: primary.name,
       contact_email: primary.email,
@@ -203,6 +204,7 @@ export async function updateClub(_prevState: ActionResult, formData: FormData): 
     .from("clubs")
     .update({
       name,
+      kind: str(formData, "kind") === "SCHOOL" ? "SCHOOL" : "CLUB",
       city,
       contact_name: primary.name,
       contact_email: primary.email,

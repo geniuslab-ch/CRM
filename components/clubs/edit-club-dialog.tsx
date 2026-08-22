@@ -50,8 +50,22 @@ export function EditClubDialog({ club }: { club: Club }) {
         <form action={formAction} className="space-y-3">
           <input type="hidden" name="id" value={club.id} />
           <div>
+            <p className="mb-1 block text-xs font-medium text-muted-foreground">Kind *</p>
+            <div className="flex gap-2">
+              {(["CLUB", "SCHOOL"] as const).map((k) => (
+                <label
+                  key={k}
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <input type="radio" name="kind" value={k} defaultChecked={club.kind === k} className="accent-primary" />
+                  {k === "CLUB" ? "Football club" : "School"}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
             <label htmlFor="ecd-name" className="mb-1 block text-xs font-medium text-muted-foreground">
-              Club name *
+              Name *
             </label>
             <Input id="ecd-name" name="name" required defaultValue={club.name} />
           </div>

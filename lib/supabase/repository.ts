@@ -69,6 +69,7 @@ function rowToClub(row: any): Club {
   return {
     id: row.id,
     name: row.name,
+    kind: row.kind === "SCHOOL" ? "SCHOOL" : "CLUB",
     city: row.city,
     contactName: row.contact_name,
     contactEmail: row.contact_email,
@@ -667,6 +668,7 @@ export async function createClubFromSignup(s: ClubSignup): Promise<{ ok: boolean
     .insert({
       id,
       name: s.organisation,
+      kind: s.organisationType === "School" ? "SCHOOL" : "CLUB",
       city: s.city || "Not provided",
       contact_name: s.contactName,
       contact_email: s.contactEmail,

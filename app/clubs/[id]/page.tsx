@@ -8,6 +8,7 @@ import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { EditClubDialog } from "@/components/clubs/edit-club-dialog";
 import { DeleteClubButton } from "@/components/clubs/delete-club-button";
 import { ClubOutreach } from "@/components/clubs/club-outreach";
+import { SchoolOutreach } from "@/components/clubs/school-outreach";
 import { BookingWidget } from "@/components/booking/booking-widget";
 import { getClubs } from "@/lib/supabase/repository";
 import { timeAgo } from "@/lib/utils";
@@ -26,7 +27,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
       <div className="flex items-center justify-between">
         <Link href="/clubs" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Club Database
+          Back to Clubs &amp; Schools
         </Link>
         <div className="flex items-center gap-2">
           <DataSourceBadge source={source} />
@@ -40,6 +41,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
           <div>
             <div className="mb-1 flex items-center gap-2">
               <h1 className="font-display text-2xl font-bold">{club.name}</h1>
+              {club.kind === "SCHOOL" && <Badge variant="accent">School</Badge>}
               <StatusBadge status={club.status} />
             </div>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -59,7 +61,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Club information</CardTitle>
+              <CardTitle>{club.kind === "SCHOOL" ? "School information" : "Club information"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -115,7 +117,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             </CardContent>
           </Card>
 
-          <ClubOutreach club={club} />
+          {club.kind === "SCHOOL" ? <SchoolOutreach school={club} /> : <ClubOutreach club={club} />}
           <BookingWidget
             contactName={club.contactName}
             contactEmail={club.contactEmail}
