@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, Check, ExternalLink } from "lucide-react";
+import { CalendarClock, Check, Copy, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sponsor } from "@/types";
+import { ConversationCategory } from "@/types";
+import { bookingUrl, BookingCategory } from "@/lib/data/appUrl";
 import { cn } from "@/lib/utils";
 
 // Real Google Calendar free/busy + booking (Booking Agent). Falls back to
 // mock slots when Google isn't configured; a mock booking never writes a
-// real meeting record (see /api/calendar/book).
+// real meeting record (see /api/calendar/book). Shared between the Sponsor
+// and Club detail pages — takes plain contact fields rather than a full
+// Sponsor/Club object so both can reuse it.
 
 interface Slot {
   day: string;
@@ -18,15 +21,40 @@ interface Slot {
   endISO: string;
 }
 
-export function BookingWidget({ sponsor }: { sponsor: Sponsor }) {
+export function BookingWidget({
+  contactName,
+  organization,
+  category,
+  relatedId,
+  bookingCategory,
+}: {
+  contactName: string;
+  organization: string;
+  category: ConversationCategory;
+  relatedId: string;
+  bookingCategory: BookingCategory;
+}) {
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [live, setLive] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);
-  const [notes, setNotes] = useState(`Sponsorship discussion with ${sponsor.name}.`);
+  const [notes, setNotes] = useState(`Discussion with ${organization}.`);
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ mock: boolean; eventLink?: string } | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const selfServeLink = bookingUrl(bookingCategory, relatedId);
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(selfServeLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    } catch {
+      // clipboard permission denied — nothing to fall back to
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -57,9 +85,10 @@ export function BookingWidget({ sponsor }: { sponsor: Sponsor }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slot: selected,
-          withName: sponsor.research.contactPerson.name,
+          withName: contactName,
           notes,
-          logAs: { organization: sponsor.name, category: "SPONSOR", relatedId: sponsor.id },
+          logAs: { organization, category, relatedId },
+          bookedBy: "ORGANIZER",
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Booking failed");
@@ -74,10 +103,22 @@ export function BookingWidget({ sponsor }: { sponsor: Sponsor }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Booking Agent</CardTitle>
+        <Button variant="secondary" size="sm" onClick={handleCopyLink}>
+          <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+          {linkCopied ? "Copied!" : "Copy self-serve link"}
+        </Button>
       </CardHeader>
       <CardContent>
+        <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
+          {organization} can also book themselves at{" "}
+          <a href={selfServeLink} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+            {selfServeLink}
+          </a>{" "}
+          — it lands here automatically, same as a booking made below.
+        </p>
+
         {loadError && <p className="text-sm text-danger">{loadError}</p>}
 
         {!loadError && slots === null && <p className="text-sm text-muted-foreground">Checking calendar availability…</p>}
@@ -90,7 +131,7 @@ export function BookingWidget({ sponsor }: { sponsor: Sponsor }) {
           <div className="space-y-4">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Propose a slot to {sponsor.research.contactPerson.name}
+                Propose a slot to {contactName}
               </p>
               <div className="flex flex-wrap gap-2">
                 {slots.map((s) => (

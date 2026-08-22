@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Sponsor, SponsorshipTier } from "@/types";
 import { ActivationLab } from "@/components/sponsors/activation-lab";
 import { ProposalGenerator } from "@/components/sponsors/proposal-generator";
-import { BookingWidget } from "@/components/sponsors/booking-widget";
+import { BookingWidget } from "@/components/booking/booking-widget";
 
 // Activation Lab leads: the first touch should sell a specific idea, not
 // a generic pitch. The formal proposal (with pricing) is a later-funnel
@@ -16,7 +16,13 @@ export function SponsorWorkspace({ sponsor }: { sponsor: Sponsor }) {
     <>
       <ActivationLab sponsor={sponsor} proposalTier={proposalTier} />
       <ProposalGenerator sponsor={sponsor} onTierChange={setProposalTier} />
-      <BookingWidget sponsor={sponsor} />
+      <BookingWidget
+        contactName={sponsor.research.contactPerson.name}
+        organization={sponsor.name}
+        category="SPONSOR"
+        relatedId={sponsor.id}
+        bookingCategory="sponsor"
+      />
     </>
   );
 }

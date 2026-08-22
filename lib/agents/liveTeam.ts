@@ -22,6 +22,7 @@ export async function getLiveAgents(): Promise<Agent[]> {
     getContentIdeas(),
   ]);
 
+  const repliesReceived = conversations.data.filter((c) => c.classification !== "AWAITING_REPLY").length;
   const researchedSponsors = sponsors.data.filter((s) => s.stage !== "PROSPECT").length;
   const avgSponsorScore = sponsors.data.length
     ? Math.round(sponsors.data.reduce((sum, s) => sum + s.fit.overall, 0) / sponsors.data.length)
@@ -64,9 +65,9 @@ export async function getLiveAgents(): Promise<Agent[]> {
       metricValue: String(conversations.data.length),
     },
     "conversation-manager": {
-      status: "WAITING", // no inbound-reply integration yet — see README
-      headline: `${conversations.data.length} conversations tracked`,
-      metricValue: String(conversations.data.length),
+      status: repliesReceived ? "ACTIVE" : "WAITING",
+      headline: `${repliesReceived} replies classified`,
+      metricValue: String(repliesReceived),
     },
     booking: {
       status: meetings.data.length ? "ACTIVE" : "WAITING",

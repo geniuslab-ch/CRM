@@ -11,6 +11,7 @@ import { SponsorWorkspace } from "@/components/sponsors/sponsor-workspace";
 import { DeleteSponsorButton } from "@/components/sponsors/delete-sponsor-button";
 import { EditSponsorDialog } from "@/components/sponsors/edit-sponsor-dialog";
 import { ResearchButton } from "@/components/sponsors/research-button";
+import { DealContentIdeas } from "@/components/sponsors/deal-content-ideas";
 import { getSponsors, getConversations } from "@/lib/supabase/repository";
 import { whyPannaLeague } from "@/lib/agents/sponsorResearcher";
 import { formatCHF, timeAgo } from "@/lib/utils";
@@ -143,6 +144,7 @@ export default async function SponsorDetailPage({ params }: { params: { id: stri
           </Card>
 
           <SponsorWorkspace sponsor={sponsor} />
+          <DealContentIdeas sponsor={sponsor} />
         </div>
 
         <div className="space-y-6">

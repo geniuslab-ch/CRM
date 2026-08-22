@@ -86,11 +86,29 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">
             The whole app is gated by a single switch: set{" "}
             <code className="rounded bg-surface-2 px-1.5 py-0.5">ANTHROPIC_API_KEY</code> in your environment and
-            redeploy to go live. It powers reply classification, content idea generation, real web-search
-            prospecting (Run AI Team), the Researcher agent, the AI Activation Lab and the Club Challenge Email
-            generator. Without it, classification and content ideas fall back to a clearly-labeled Mock AI, and the
-            prospecting/research/activation/club-email features are disabled outright rather than faked — see the
-            sidebar status below.
+            redeploy to go live. It powers reply classification (including real inbound replies, once polling is set
+            up below), content idea generation, real web-search prospecting (Run AI Team), the Researcher agent, the
+            AI Activation Lab, the Club Challenge Email generator, and suggesting content ideas from a confirmed
+            sponsor&apos;s deal terms. Without it, classification and content ideas fall back to a clearly-labeled
+            Mock AI, and the rest are disabled outright rather than faked — see the sidebar status below.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Real inbound replies</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            The Conversation Manager polls Gmail every 15 minutes for replies from known sponsor/club contacts and
+            classifies them automatically (see <code className="rounded bg-surface-2 px-1.5 py-0.5">vercel.json</code>{" "}
+            and <code className="rounded bg-surface-2 px-1.5 py-0.5">/api/cron/poll-inbox</code>). It needs your
+            Google credentials configured (same ones as Calendar/Gmail sending) plus a{" "}
+            <code className="rounded bg-surface-2 px-1.5 py-0.5">CRON_SECRET</code> environment variable — pick any
+            random string, set it, and redeploy. Vercel automatically authenticates its own cron requests with it; the
+            route refuses every other request. Note: scheduled cron on Vercel&apos;s Hobby plan is limited to once a
+            day — the Pro plan is needed for the 15-minute schedule to actually run that often.
           </p>
         </CardContent>
       </Card>

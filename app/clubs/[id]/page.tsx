@@ -8,6 +8,7 @@ import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { EditClubDialog } from "@/components/clubs/edit-club-dialog";
 import { DeleteClubButton } from "@/components/clubs/delete-club-button";
 import { ClubOutreach } from "@/components/clubs/club-outreach";
+import { BookingWidget } from "@/components/booking/booking-widget";
 import { getClubs } from "@/lib/supabase/repository";
 import { timeAgo } from "@/lib/utils";
 
@@ -115,6 +116,13 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
           </Card>
 
           <ClubOutreach club={club} />
+          <BookingWidget
+            contactName={club.contactName}
+            organization={club.name}
+            category="CLUB"
+            relatedId={club.id}
+            bookingCategory="club"
+          />
         </div>
 
         <div className="space-y-6">

@@ -168,6 +168,11 @@ export interface Sponsor {
   research: SponsorResearch;
   aiRecommendation: string;
   activation: ActivationConcept | null;
+  // What was actually agreed with this sponsor, in the organizer's own
+  // words — free text, never inferred from the generated proposal tier
+  // (a real negotiation can drift from it). Feeds the "suggest content
+  // ideas from this deal" AI action. Null until filled in.
+  dealTerms: string | null;
 }
 
 // ── AI Activation Lab ────────────────────────────────────────
@@ -239,6 +244,9 @@ export interface Message {
 export interface Conversation {
   id: string;
   contactName: string;
+  // Real inbound sender address when known (set by the inbox poller) —
+  // needed to actually send a reply back. Null for outbound-only threads.
+  contactEmail: string | null;
   organization: string;
   category: ConversationCategory;
   relatedId: string; // player/club/sponsor id
@@ -254,6 +262,7 @@ export interface Conversation {
 // ── Meetings / bookings ─────────────────────────────────────
 
 export type MeetingStatus = "PROPOSED" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+export type MeetingBookedBy = "ORGANIZER" | "CONTACT";
 
 export interface Meeting {
   id: string;
@@ -266,6 +275,9 @@ export interface Meeting {
   durationMinutes: number;
   status: MeetingStatus;
   agenda: string;
+  // Who actually booked it: the organizer from a sponsor/club detail page,
+  // or the contact themselves via their own public booking link.
+  bookedBy: MeetingBookedBy;
 }
 
 // ── Content ─────────────────────────────────────────────────

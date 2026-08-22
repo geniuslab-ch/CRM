@@ -52,16 +52,19 @@ export class ClaudeAIProvider implements AIProvider {
     ];
 
     const system = [
+      baseSystemPrompt(),
       "You are the Conversation Manager agent for Panna League Switzerland.",
       `Classify the reply into exactly one of: ${labels.join(", ")}.`,
       "Then give one short, actionable recommended next step (under 20 words).",
-      'Respond with ONLY a JSON object, no markdown, in this exact shape: {"classification": "...", "recommendedAction": "...", "confidence": 0.0}',
+      "Then draft a short suggested reply (2-4 sentences, in the brand voice, ready to edit and send) — unless the",
+      "classification is NOT_INTERESTED or WRONG_PERSON, where there's nothing useful to draft (leave draftResponse as",
+      'an empty string in that case). Respond with ONLY a JSON object, no markdown, in this exact shape: {"classification": "...", "recommendedAction": "...", "confidence": 0.0, "draftResponse": "..."}',
       "confidence is your certainty in the classification, between 0 and 1.",
     ].join(" ");
 
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 300,
+      max_tokens: 500,
       output_config: { effort: "low" },
       system,
       messages: [{ role: "user", content: replyText }],
@@ -77,6 +80,7 @@ export class ClaudeAIProvider implements AIProvider {
             classification: parsed.classification,
             recommendedAction: parsed.recommendedAction,
             confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.75,
+            draftResponse: typeof parsed.draftResponse === "string" ? parsed.draftResponse : "",
           };
         }
       } catch {
@@ -88,6 +92,7 @@ export class ClaudeAIProvider implements AIProvider {
       classification: "NEEDS_INFORMATION",
       recommendedAction: "Could not parse AI classification — review manually.",
       confidence: 0,
+      draftResponse: "",
     };
   }
 

@@ -12,7 +12,7 @@ export default async function ConversationsPage() {
     <div>
       <PageHeader
         title="Conversation Center"
-        description="A real log of outreach actually sent through the platform. Replies aren't captured automatically yet — no inbox integration is connected, so nothing here is simulated."
+        description="A real log of outreach sent through the platform, plus real replies pulled in automatically from sponsor and club contacts (polled every 15 minutes) and classified by Claude."
         action={<DataSourceBadge source={source} />}
       />
       <Inbox conversations={conversations} />

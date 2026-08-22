@@ -129,6 +129,18 @@ export function EditSponsorDialog({ sponsor }: { sponsor: Sponsor }) {
             </label>
             <Textarea id="ed-fit-why" name="fitWhy" rows={3} defaultValue={sponsor.fitWhy} />
           </div>
+          <div>
+            <label htmlFor="ed-deal-terms" className="mb-1 block text-xs font-medium text-muted-foreground">
+              Deal terms — what was actually agreed (internal only, feeds AI content ideas)
+            </label>
+            <Textarea
+              id="ed-deal-terms"
+              name="dealTerms"
+              rows={3}
+              placeholder="e.g. 3 Instagram Reels during the event, logo on the panna cage, 2 winner interview clips…"
+              defaultValue={sponsor.dealTerms ?? ""}
+            />
+          </div>
           {state.error && <p className="text-sm text-danger">{state.error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>

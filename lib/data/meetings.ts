@@ -31,6 +31,7 @@ export function generateMeetings(count = 10): Meeting[] {
         durationMinutes: rng.pick([15, 30, 30, 45]),
         status: daysOffset < 0 ? rng.pick(["CONFIRMED", "PROPOSED"]) : rng.pick(["COMPLETED", "CANCELLED", "COMPLETED"]),
         agenda: `Sponsorship discussion — ${s.research.suggestedPackage}`,
+        bookedBy: "ORGANIZER",
       });
     } else {
       const c = rng.pick(clubCandidates);
@@ -45,6 +46,7 @@ export function generateMeetings(count = 10): Meeting[] {
         durationMinutes: rng.pick([15, 30]),
         status: daysOffset < 0 ? rng.pick(["CONFIRMED", "PROPOSED"]) : "COMPLETED",
         agenda: "Player recruitment & roster discussion",
+        bookedBy: "ORGANIZER",
       });
     }
   }

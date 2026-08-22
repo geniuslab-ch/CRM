@@ -7,6 +7,11 @@ export interface ClassificationResult {
   classification: string;
   recommendedAction: string;
   confidence: number;
+  // A short suggested reply in the brand voice, editable before sending —
+  // used by the Conversation Manager for real inbound replies. Empty
+  // string when there's nothing sensible to draft (e.g. a WRONG_PERSON
+  // or NOT_INTERESTED reply).
+  draftResponse: string;
 }
 
 export interface ContentIdeaDraft {

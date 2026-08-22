@@ -7,9 +7,10 @@ import { Topbar } from "./topbar";
 export function AppShell({ children, aiLive }: { children: React.ReactNode; aiLive: boolean }) {
   const pathname = usePathname();
 
-  // /login renders its own full-bleed layout — no nav chrome for an
-  // unauthenticated visitor to see.
-  if (pathname === "/login") {
+  // /login and a contact's own public /book/[category]/[id] link render
+  // their own full-bleed layout — no CRM nav chrome for an outside visitor
+  // (unauthenticated, and not staff) to see.
+  if (pathname === "/login" || pathname.startsWith("/book/")) {
     return <>{children}</>;
   }
 

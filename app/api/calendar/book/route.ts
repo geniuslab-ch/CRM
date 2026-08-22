@@ -4,17 +4,26 @@ import { isGoogleConfigured } from "@/lib/integrations/google-client";
 import { logMeeting } from "@/lib/supabase/repository";
 import { ConversationCategory } from "@/types";
 
+// Public (see middleware.ts) — reachable both from the authenticated
+// Sponsor/Club detail pages (organizer booking on the contact's behalf)
+// and from a contact's own public /book/[category]/[id] link (self-serve).
 export async function POST(req: NextRequest) {
   let body: {
     slot?: CalendarSlot;
     withName?: string;
     notes?: string;
     logAs?: { organization: string; category: ConversationCategory; relatedId?: string };
+    bookedBy?: "ORGANIZER" | "CONTACT";
+    _gotcha?: string; // honeypot, mirrors the public signup forms
   };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (body._gotcha) {
+    return NextResponse.json({ confirmed: true, mock: true });
   }
 
   if (!body.slot || !body.withName) {
@@ -38,6 +47,7 @@ export async function POST(req: NextRequest) {
         endTime: body.slot.endISO,
         notes: body.notes,
         eventLink: result.eventLink,
+        bookedBy: body.bookedBy ?? "ORGANIZER",
       });
     }
 

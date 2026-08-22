@@ -94,6 +94,7 @@ function rowToSponsor(row: any): Sponsor {
     research: row.research,
     aiRecommendation: row.ai_recommendation,
     activation: row.activation ?? null,
+    dealTerms: row.deal_terms ?? null,
   };
 }
 
@@ -190,28 +191,56 @@ export async function getSponsors(): Promise<LiveResult<Sponsor>> {
   }
 }
 
-function rowToConversation(row: any): Conversation {
-  return {
-    id: row.id,
-    contactName: row.contact_name,
-    organization: row.organization,
-    category: row.category,
-    relatedId: row.related_id,
-    messages: [{ id: `${row.id}-1`, from: "AI", text: row.message, timestamp: row.created_at }],
-    lastMessagePreview: row.message,
-    lastMessageAt: row.created_at,
-    // Real, not fabricated: this table only logs messages actually sent —
-    // there's no inbound-reply integration yet, so every row genuinely is
-    // still awaiting a reply. See README §18.
-    classification: "AWAITING_REPLY",
-    recommendedAction: "No reply yet — follow up if you don't hear back in a few days.",
-    aiDraftResponse: "",
-    unread: false,
-  };
+// Groups raw message rows (one row per message, either direction) into
+// per-contact threads, newest thread first. A thread's headline fields
+// (classification/recommendedAction/aiDraftResponse/unread) come from its
+// most recent INBOUND message — a thread with no real reply yet keeps the
+// same honest "awaiting reply" default this always showed before real
+// inbound polling existed. Rows with no related_id each become their own
+// single-message thread rather than being collapsed together.
+function groupConversations(rows: any[]): Conversation[] {
+  const threads = new Map<string, any[]>();
+  for (const row of rows) {
+    const key = row.related_id ?? `solo-${row.id}`;
+    const list = threads.get(key);
+    if (list) list.push(row);
+    else threads.set(key, [row]);
+  }
+
+  const conversations: Conversation[] = [];
+  for (const msgs of threads.values()) {
+    msgs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    const latest = msgs[msgs.length - 1];
+    const latestInbound = [...msgs].reverse().find((m) => m.direction === "INBOUND");
+
+    conversations.push({
+      id: latest.id,
+      contactName: latest.contact_name,
+      contactEmail: latestInbound?.from_email ?? null,
+      organization: latest.organization,
+      category: latest.category,
+      relatedId: latest.related_id,
+      messages: msgs.map((m) => ({
+        id: m.id,
+        from: m.direction === "INBOUND" ? "THEM" : "AI",
+        text: m.message,
+        timestamp: m.created_at,
+      })),
+      lastMessagePreview: latest.message,
+      lastMessageAt: latest.created_at,
+      classification: latestInbound?.classification ?? "AWAITING_REPLY",
+      recommendedAction: latestInbound?.recommended_action ?? "No reply yet — follow up if you don't hear back in a few days.",
+      aiDraftResponse: latestInbound?.ai_draft_response ?? "",
+      unread: Boolean(latestInbound?.unread),
+    });
+  }
+
+  return conversations.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 }
 
-// Real sent-message log — populated only when the Outreach Agent actually
-// sends an email (see /api/email/send). Never seeded with fake history.
+// Real activity log — populated when the Outreach Agent sends an email
+// (OUTBOUND) or the inbox poller pulls in a real reply (INBOUND, see
+// app/api/cron/poll-inbox). Never seeded with fake history.
 export async function getConversations(): Promise<LiveResult<Conversation>> {
   if (!isSupabaseConfigured()) return { data: [], source: "unavailable" };
   try {
@@ -223,7 +252,7 @@ export async function getConversations(): Promise<LiveResult<Conversation>> {
       console.error("Supabase getConversations error:", error.message);
       return { data: [], source: "unavailable" };
     }
-    return { data: (data ?? []).map(rowToConversation), source: "live" };
+    return { data: groupConversations(data ?? []), source: "live" };
   } catch (err) {
     console.error("Supabase getConversations failed:", err);
     return { data: [], source: "unavailable" };
@@ -238,6 +267,14 @@ export async function logConversation(entry: {
   category: ConversationCategory;
   relatedId?: string;
   message: string;
+  direction?: "OUTBOUND" | "INBOUND";
+  fromEmail?: string;
+  gmailMessageId?: string;
+  gmailThreadId?: string;
+  classification?: string;
+  recommendedAction?: string;
+  aiDraftResponse?: string;
+  unread?: boolean;
 }): Promise<void> {
   if (!isSupabaseConfigured()) return;
   try {
@@ -250,10 +287,34 @@ export async function logConversation(entry: {
         category: entry.category,
         related_id: entry.relatedId ?? null,
         message: entry.message,
+        direction: entry.direction ?? "OUTBOUND",
+        from_email: entry.fromEmail ?? null,
+        gmail_message_id: entry.gmailMessageId ?? null,
+        gmail_thread_id: entry.gmailThreadId ?? null,
+        classification: entry.classification ?? null,
+        recommended_action: entry.recommendedAction ?? null,
+        ai_draft_response: entry.aiDraftResponse ?? null,
+        unread: entry.unread ?? false,
       });
     if (error) console.error("Supabase logConversation error:", error.message);
   } catch (err) {
     console.error("Supabase logConversation failed:", err);
+  }
+}
+
+// Marks a conversation thread read — called when the organizer opens it in
+// the Conversation Center. Best-effort, matches logConversation's pattern.
+export async function markConversationRead(relatedId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await getSupabaseServerClient()
+      .from("conversations")
+      .update({ unread: false })
+      .eq("related_id", relatedId)
+      .eq("direction", "INBOUND");
+    if (error) console.error("Supabase markConversationRead error:", error.message);
+  } catch (err) {
+    console.error("Supabase markConversationRead failed:", err);
   }
 }
 
@@ -276,6 +337,7 @@ function rowToMeeting(row: any): Meeting {
     durationMinutes: Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000)),
     status: "CONFIRMED",
     agenda: row.notes || `Panna League x ${row.organization}`,
+    bookedBy: row.booked_by === "CONTACT" ? "CONTACT" : "ORGANIZER",
   };
 }
 
@@ -303,6 +365,7 @@ export async function logMeeting(entry: {
   endTime: string;
   notes?: string;
   eventLink?: string;
+  bookedBy?: "ORGANIZER" | "CONTACT";
 }): Promise<void> {
   if (!isSupabaseConfigured()) return;
   try {
@@ -318,6 +381,7 @@ export async function logMeeting(entry: {
         end_time: entry.endTime,
         notes: entry.notes ?? null,
         event_link: entry.eventLink ?? null,
+        booked_by: entry.bookedBy ?? "ORGANIZER",
       });
     if (error) console.error("Supabase logMeeting error:", error.message);
   } catch (err) {
@@ -346,6 +410,32 @@ function rowToContentIdea(row: any): ContentOpportunity {
     scheduledDate: row.scheduled_date,
     performance: row.performance,
   };
+}
+
+// ── Inbox poll state ─────────────────────────────────────────
+// Single-row cursor for the inbox poller (see lib/agents/inboxPoller.ts) —
+// each poll only asks Gmail for messages received since this timestamp.
+
+export async function getLastPolledAt(): Promise<string> {
+  const fallback = new Date(Date.now() - 86400000).toISOString();
+  if (!isSupabaseConfigured()) return fallback;
+  try {
+    const { data, error } = await getSupabaseServerClient().from("inbox_poll_state").select("last_polled_at").eq("id", 1).single();
+    if (error || !data) return fallback;
+    return data.last_polled_at;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function setLastPolledAt(iso: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await getSupabaseServerClient().from("inbox_poll_state").update({ last_polled_at: iso }).eq("id", 1);
+    if (error) console.error("Supabase setLastPolledAt error:", error.message);
+  } catch (err) {
+    console.error("Supabase setLastPolledAt failed:", err);
+  }
 }
 
 export async function getContentIdeas(): Promise<LiveResult<ContentOpportunity>> {

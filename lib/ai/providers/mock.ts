@@ -6,28 +6,29 @@ export class MockAIProvider implements AIProvider {
 
   async classifyReply(replyText: string): Promise<ClassificationResult> {
     const lower = replyText.toLowerCase();
+    const mockDraft = "(Mock AI — set ANTHROPIC_API_KEY for a real drafted reply.)";
     if (lower.includes("more information") || lower.includes("deck") || lower.includes("details")) {
-      return { classification: "NEEDS_INFORMATION", recommendedAction: "Send sponsorship deck + propose a 15-minute call.", confidence: 0.88 };
+      return { classification: "NEEDS_INFORMATION", recommendedAction: "Send sponsorship deck + propose a 15-minute call.", confidence: 0.88, draftResponse: mockDraft };
     }
     if (lower.includes("call") || lower.includes("talk") || lower.includes("chat")) {
-      return { classification: "CALL_REQUEST", recommendedAction: "Offer available time slots via Booking Agent.", confidence: 0.84 };
+      return { classification: "CALL_REQUEST", recommendedAction: "Offer available time slots via Booking Agent.", confidence: 0.84, draftResponse: mockDraft };
     }
     if (lower.includes("proposal") || lower.includes("numbers") || lower.includes("pricing")) {
-      return { classification: "SEND_PROPOSAL", recommendedAction: "Generate and send tailored sponsorship proposal.", confidence: 0.86 };
+      return { classification: "SEND_PROPOSAL", recommendedAction: "Generate and send tailored sponsorship proposal.", confidence: 0.86, draftResponse: mockDraft };
     }
     if (lower.includes("not") && (lower.includes("interested") || lower.includes("fit"))) {
-      return { classification: "NOT_INTERESTED", recommendedAction: "Log as declined and archive.", confidence: 0.81 };
+      return { classification: "NOT_INTERESTED", recommendedAction: "Log as declined and archive.", confidence: 0.81, draftResponse: "" };
     }
     if (lower.includes("budget") || lower.includes("expensive") || lower.includes("already")) {
-      return { classification: "OBJECTION", recommendedAction: "Address concern directly, then re-offer a smaller package.", confidence: 0.77 };
+      return { classification: "OBJECTION", recommendedAction: "Address concern directly, then re-offer a smaller package.", confidence: 0.77, draftResponse: mockDraft };
     }
     if (lower.includes("later") || lower.includes("q4") || lower.includes("next quarter")) {
-      return { classification: "FOLLOW_UP_LATER", recommendedAction: "Schedule automatic follow-up in 2 weeks.", confidence: 0.79 };
+      return { classification: "FOLLOW_UP_LATER", recommendedAction: "Schedule automatic follow-up in 2 weeks.", confidence: 0.79, draftResponse: mockDraft };
     }
     if (lower.includes("wrong") || lower.includes("not my department") || lower.includes("forward")) {
-      return { classification: "WRONG_PERSON", recommendedAction: "Ask for the correct contact and re-route outreach.", confidence: 0.9 };
+      return { classification: "WRONG_PERSON", recommendedAction: "Ask for the correct contact and re-route outreach.", confidence: 0.9, draftResponse: "" };
     }
-    return { classification: "INTERESTED", recommendedAction: "Move to next stage and propose a concrete next step.", confidence: 0.72 };
+    return { classification: "INTERESTED", recommendedAction: "Move to next stage and propose a concrete next step.", confidence: 0.72, draftResponse: mockDraft };
   }
 
   async generateContentIdea(trigger: string): Promise<ContentIdeaDraft> {

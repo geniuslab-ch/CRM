@@ -30,7 +30,14 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
 // type registers by default — Google will redirect here even though
 // nothing is listening; we only need the ?code=... in the resulting URL.
 const REDIRECT_URI = "http://localhost";
-const SCOPES = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/gmail.send"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/gmail.send",
+  // Read-only inbox access for the Conversation Manager's inbox poller
+  // (app/api/cron/poll-inbox) — it only reads, never modifies or deletes
+  // anything, so the least-privilege readonly scope is enough.
+  "https://www.googleapis.com/auth/gmail.readonly",
+];
 
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Pencil, Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Conversation, ConversationCategory } from "@/types";
 import { cn, initials, timeAgo } from "@/lib/utils";
+import { markConversationAsRead } from "@/lib/supabase/actions";
 
 const TABS: { value: ConversationCategory | "ALL"; label: string }[] = [
   { value: "ALL", label: "All" },
@@ -18,11 +20,15 @@ const TABS: { value: ConversationCategory | "ALL"; label: string }[] = [
 ];
 
 export function Inbox({ conversations }: { conversations: Conversation[] }) {
+  const router = useRouter();
   const [tab, setTab] = useState<string>("ALL");
   const [selectedId, setSelectedId] = useState(conversations[0]?.id ?? "");
   const [statusById, setStatusById] = useState<Record<string, "approved" | "sent">>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const filtered = useMemo(
     () => (tab === "ALL" ? conversations : conversations.filter((c) => c.category === tab)),
@@ -30,6 +36,45 @@ export function Inbox({ conversations }: { conversations: Conversation[] }) {
   );
 
   const selected = conversations.find((c) => c.id === selectedId) ?? filtered[0];
+
+  // Mark read as soon as the organizer opens an unread thread — optimistic
+  // locally (clears the dot immediately), persisted in the background.
+  useEffect(() => {
+    if (selected && selected.unread && !readIds.has(selected.relatedId)) {
+      setReadIds((prev) => new Set(prev).add(selected.relatedId));
+      markConversationAsRead(selected.relatedId).catch(() => {});
+    }
+  }, [selected, readIds]);
+
+  async function handleSend() {
+    if (!selected || !selected.contactEmail) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: selected.contactEmail,
+          subject: `Re: ${selected.organization}`,
+          message: drafts[selected.id] ?? selected.aiDraftResponse,
+          logAs: {
+            contactName: selected.contactName,
+            organization: selected.organization,
+            category: selected.category,
+            relatedId: selected.relatedId,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Send failed");
+      setStatusById((s) => ({ ...s, [selected.id]: "sent" }));
+      router.refresh();
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Couldn't send — please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -59,7 +104,9 @@ export function Inbox({ conversations }: { conversations: Conversation[] }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className={cn("truncate text-sm font-medium", c.unread && "font-semibold")}>{c.contactName}</p>
+                  <p className={cn("truncate text-sm font-medium", c.unread && !readIds.has(c.relatedId) && "font-semibold")}>
+                    {c.contactName}
+                  </p>
                   <span className="shrink-0 text-[11px] text-muted-foreground">{timeAgo(c.lastMessageAt)}</span>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">{c.organization}</p>
@@ -68,7 +115,9 @@ export function Inbox({ conversations }: { conversations: Conversation[] }) {
                   <StatusBadge status={c.classification} />
                 </div>
               </div>
-              {c.unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />}
+              {c.unread && !readIds.has(c.relatedId) && (
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+              )}
             </button>
           ))}
           {filtered.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No conversations.</p>}
@@ -145,18 +194,22 @@ export function Inbox({ conversations }: { conversations: Conversation[] }) {
                     </Button>
                     <Button
                       size="sm"
-                      disabled={statusById[selected.id] === "sent"}
-                      onClick={() => setStatusById((s) => ({ ...s, [selected.id]: "sent" }))}
+                      disabled={statusById[selected.id] === "sent" || sending || !selected.contactEmail}
+                      onClick={handleSend}
                     >
                       <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                      {statusById[selected.id] === "sent" ? "SENT (mock)" : "SEND MOCK"}
+                      {statusById[selected.id] === "sent" ? "SENT" : sending ? "Sending…" : "SEND"}
                     </Button>
                   </div>
+                  {!selected.contactEmail && (
+                    <p className="text-xs text-warning">No real reply address on file for this thread yet.</p>
+                  )}
+                  {sendError && <p className="text-xs text-danger">{sendError}</p>}
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  No reply yet — there&apos;s nothing to draft a response to. This inbox only shows real sent messages;
-                  connect a mailbox integration to see replies land here automatically.
+                  No reply yet — there&apos;s nothing to draft a response to. Real replies land here automatically
+                  (polled every 15 minutes) once a sponsor or club contact writes back.
                 </p>
               )}
             </div>

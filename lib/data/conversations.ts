@@ -141,6 +141,7 @@ export function generateConversations(count = 20): Conversation[] {
     conversations.push({
       id: `conv-${i + 1}`,
       contactName: contact.name,
+      contactEmail: null,
       organization: contact.organization,
       category: contact.category,
       relatedId: contact.relatedId,

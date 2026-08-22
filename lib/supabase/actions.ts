@@ -2,8 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { createContentIdea, updateContentIdeaStatus, deleteContentIdea } from "./repository";
+import { createContentIdea, updateContentIdeaStatus, deleteContentIdea, markConversationRead } from "./repository";
 import { ContentOpportunity, ContentStatus } from "@/types";
+
+export async function markConversationAsRead(relatedId: string): Promise<void> {
+  await markConversationRead(relatedId);
+  revalidatePath("/conversations");
+}
 
 // Server Actions for adding/removing real CRM records. These are the
 // write counterpart to lib/supabase/repository.ts's read-only
@@ -270,6 +275,7 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
   };
 
   const fitWhy = str(formData, "fitWhy");
+  const dealTerms = str(formData, "dealTerms");
 
   const { error } = await supabase
     .from("sponsors")
@@ -281,6 +287,7 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
       stage: str(formData, "stage") || "PROSPECT",
       research,
       ...(fitWhy ? { fit_why: fitWhy } : {}),
+      deal_terms: dealTerms || null,
     })
     .eq("id", id);
 

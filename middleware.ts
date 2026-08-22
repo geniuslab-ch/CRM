@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
-// Cross-origin lead-intake endpoints called directly by the public
-// Panna League marketing site (a separate deployment) — never carries
-// the session cookie, so it must stay outside the passcode gate.
-const PUBLIC_PATH_PREFIXES = ["/api/public/"];
+const PUBLIC_PATH_PREFIXES = [
+  // Cross-origin lead-intake endpoints called directly by the public
+  // Panna League marketing site (a separate deployment) — never carries
+  // the session cookie, so it must stay outside the passcode gate.
+  "/api/public/",
+  // Fired by Vercel Cron, which can't carry a session cookie — the route
+  // itself checks the Authorization header against CRON_SECRET.
+  "/api/cron/",
+  // A sponsor/club's own public self-service booking page and the
+  // real-availability/booking routes it calls — no CRM login for them,
+  // trust model matches /api/public/ (a valid sponsor/club id is required
+  // to book anything real).
+  "/book/",
+  "/api/calendar/",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
