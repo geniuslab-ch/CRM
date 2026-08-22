@@ -9,6 +9,9 @@ export const MARKETING_SITE_URL = "https://pl-three-pi.vercel.app";
 // marketing site's register.html (see script.js there) to pre-fill the
 // player's club field, so registrations from this specific poster/QR
 // are correctly attributed back to the club in the CRM automatically.
-export function clubRegistrationUrl(clubName: string): string {
-  return `${MARKETING_SITE_URL}/register.html?club=${encodeURIComponent(clubName)}`;
+// For a school, pass kind so the marketing site can also swap its "club
+// de football" field label/copy for institution-appropriate wording.
+export function clubRegistrationUrl(clubName: string, kind?: "CLUB" | "SCHOOL"): string {
+  const url = `${MARKETING_SITE_URL}/register.html?club=${encodeURIComponent(clubName)}`;
+  return kind === "SCHOOL" ? `${url}&type=school` : url;
 }

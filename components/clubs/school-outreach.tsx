@@ -22,7 +22,7 @@ interface OutreachEmailDraft {
 }
 
 export function SchoolOutreach({ school }: { school: Club }) {
-  const registrationUrl = clubRegistrationUrl(school.name);
+  const registrationUrl = clubRegistrationUrl(school.name, "SCHOOL");
   const contacts =
     school.contacts.length > 0 ? school.contacts : [{ name: school.contactName, email: school.contactEmail, isPrimary: true }];
   const primaryIdx = Math.max(0, contacts.findIndex((c) => c.isPrimary));

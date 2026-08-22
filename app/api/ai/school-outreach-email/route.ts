@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const draft = await generateSchoolOutreachEmail(school, clubRegistrationUrl(school.name));
+    const draft = await generateSchoolOutreachEmail(school, clubRegistrationUrl(school.name, "SCHOOL"));
     return NextResponse.json(draft);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);

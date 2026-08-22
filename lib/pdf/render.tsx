@@ -12,6 +12,6 @@ export async function renderProposalPdf(sponsor: Sponsor, tier: SponsorshipTier)
 }
 
 export async function renderClubPosterPdf(club: Club): Promise<Buffer> {
-  const qrDataUrl = await qrCodeDataUrl(clubRegistrationUrl(club.name));
+  const qrDataUrl = await qrCodeDataUrl(clubRegistrationUrl(club.name, club.kind));
   return renderToBuffer(<ClubPosterDocument club={club} qrDataUrl={qrDataUrl} />);
 }
