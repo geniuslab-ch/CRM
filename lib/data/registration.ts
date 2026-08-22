@@ -1,7 +1,9 @@
-// Shared with the Panna League marketing site (geniuslab-ch/panna-league,
-// a separate deployment) — the canonical public URL for player
-// registration. Update this if that site ever moves to a custom domain.
-export const MARKETING_SITE_URL = "https://panna-league.vercel.app";
+// Shared with the Panna League marketing site (geniuslab-ch/PL, a
+// separate deployment) — the canonical public URL for player
+// registration. panna-league.vercel.app is a stale deployment/alias that
+// doesn't reflect the current site — update this again if the real site
+// ever moves to a custom domain.
+export const MARKETING_SITE_URL = "https://pl-three-pi.vercel.app";
 
 // A club's own recruitment link — the ?club= tag is read by the
 // marketing site's register.html (see script.js there) to pre-fill the
