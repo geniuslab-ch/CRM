@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -106,7 +107,9 @@ export function ClubsTable({ clubs }: { clubs: Club[] }) {
               {filtered.map((c) => (
                 <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-2/60">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{c.name}</p>
+                    <Link href={`/clubs/${c.id}`} className="font-medium hover:text-primary hover:underline">
+                      {c.name}
+                    </Link>
                     {c.website && (
                       <a href={c.website} className="text-xs text-muted-foreground hover:text-primary" target="_blank" rel="noreferrer">
                         {c.website.replace("https://", "")}

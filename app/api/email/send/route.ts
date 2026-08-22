@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEmailProvider } from "@/lib/integrations/email";
 import { logConversation } from "@/lib/supabase/repository";
-import { renderProposalPdf } from "@/lib/pdf/render";
-import { ConversationCategory, Sponsor, SponsorshipTier } from "@/types";
+import { renderProposalPdf, renderClubPosterPdf } from "@/lib/pdf/render";
+import { Club, ConversationCategory, Sponsor, SponsorshipTier } from "@/types";
 
 export async function POST(req: NextRequest) {
   let body: {
@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     message?: string;
     logAs?: { contactName: string; organization: string; category: ConversationCategory; relatedId?: string };
     attachProposal?: { sponsor: Sponsor; tier: SponsorshipTier };
+    attachClubPoster?: { club: Club };
   };
   try {
     body = await req.json();
@@ -29,6 +30,12 @@ export async function POST(req: NextRequest) {
           filename: `${body.attachProposal.sponsor.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.pdf`,
           contentType: "application/pdf",
           content: await renderProposalPdf(body.attachProposal.sponsor, body.attachProposal.tier),
+        }
+      : body.attachClubPoster
+      ? {
+          filename: `${body.attachClubPoster.club.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-recruitment-poster.pdf`,
+          contentType: "application/pdf",
+          content: await renderClubPosterPdf(body.attachClubPoster.club),
         }
       : undefined;
     const result = await provider.send(body.to, body.subject, body.message, attachment);
