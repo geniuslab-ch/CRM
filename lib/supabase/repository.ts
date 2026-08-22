@@ -43,6 +43,14 @@ function rowToPlayer(row: any): Player {
     aiRecommendation: row.ai_recommendation,
     aiWhy: row.ai_why,
     avatarSeed: row.avatar_seed,
+    ageGroup: row.age_group ?? null,
+    contactEmail: row.contact_email ?? null,
+    contactPhone: row.contact_phone ?? null,
+    instagram: row.instagram ?? null,
+    tiktok: row.tiktok ?? null,
+    signupNote: row.signup_note ?? null,
+    signupSource: row.signup_source ?? null,
+    positionNote: row.position_note ?? null,
   };
 }
 
@@ -419,6 +427,100 @@ export async function createPlayerFromResearch(c: PlayerCandidate): Promise<{ ok
       ai_recommendation: "Identified by the Player Recruiter agent via live web research — verify before contacting.",
       ai_why: withSources(c.aiWhy, c.sources),
       avatar_seed: id,
+    });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// ── Public signups ──────────────────────────────────────────
+// Used by /api/public/player-signup, which the Panna League marketing
+// site (a separate repo/deployment) calls from its player registration
+// and "Signal" guerrilla-campaign forms. Every submission lands as a
+// real, unscored IDENTIFIED player — never fabricated stats. Fields the
+// form didn't collect (exact age, city on the main form, etc.) stay
+// null/"Not provided" rather than being guessed.
+
+export interface PlayerSignup {
+  firstName: string;
+  lastName: string;
+  city: string | null;
+  ageGroup: string | null; // e.g. "18-24" — brackets only, no exact age is ever collected
+  club: string | null;
+  positionRaw: string | null; // free text from the Signal form, best-effort classified below
+  note: string | null; // "why should I be selected" answer
+  contactEmail: string | null;
+  contactPhone: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  source: string; // which public form/channel, e.g. "site-register", "signal:lausanne01"
+}
+
+function ageFromGroup(group: string | null): number {
+  switch (group) {
+    case "Under 16":
+      return 15;
+    case "16-17":
+      return 16;
+    case "18-24":
+      return 21;
+    case "25-34":
+      return 29;
+    case "35+":
+      return 40;
+    default:
+      // No bracket collected at all — same neutral fallback the manual
+      // "Add Player" dialog already uses when age is left blank.
+      return 20;
+  }
+}
+
+function classifySignupPosition(raw: string | null): Player["position"] {
+  if (!raw) return "Unknown";
+  const s = raw.toLowerCase();
+  if (/attaqu|striker|attacker|avant.?centre/.test(s)) return "Attacker";
+  if (/milieu|playmaker|meneur/.test(s)) return "Playmaker";
+  if (/freestyle|jongl/.test(s)) return "Freestyler";
+  if (/d[ée]fenseur|defender|arri[eè]re/.test(s)) return "Defender";
+  if (/polyvalent|all.?round|tous les postes|pas de poste/.test(s)) return "All-Round";
+  return "Unknown";
+}
+
+export async function createPlayerFromSignup(s: PlayerSignup): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const id = `player-${crypto.randomUUID()}`;
+  const name = `${s.firstName} ${s.lastName}`.trim();
+  const { error } = await getSupabaseServerClient()
+    .from("players")
+    .insert({
+      id,
+      name,
+      age: ageFromGroup(s.ageGroup),
+      city: s.city || "Not provided",
+      club: s.club || null,
+      position: classifySignupPosition(s.positionRaw),
+      player_score: 50,
+      score_breakdown: {
+        technical: 50,
+        experience: 50,
+        streetRelevance: 50,
+        socialAudience: 50,
+        localRelevance: 50,
+        competitivePotential: 50,
+      },
+      social_audience: 0,
+      status: "IDENTIFIED",
+      last_contact: null,
+      ai_recommendation: "Public signup via the Panna League website — not yet reviewed by the Player Recruiter agent.",
+      ai_why: s.note || "Applied directly through the public registration form.",
+      avatar_seed: id,
+      age_group: s.ageGroup,
+      contact_email: s.contactEmail,
+      contact_phone: s.contactPhone,
+      instagram: s.instagram,
+      tiktok: s.tiktok,
+      signup_note: s.note,
+      signup_source: s.source,
+      position_note: s.positionRaw,
     });
   if (error) return { ok: false, error: error.message };
   return { ok: true };

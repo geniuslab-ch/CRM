@@ -34,7 +34,7 @@ export interface Player {
   age: number;
   city: SwissCity;
   club: string | null;
-  position: "Attacker" | "Playmaker" | "Freestyler" | "Defender" | "All-Round";
+  position: "Attacker" | "Playmaker" | "Freestyler" | "Defender" | "All-Round" | "Unknown";
   playerScore: number; // 0-100
   scoreBreakdown: {
     technical: number;
@@ -50,6 +50,17 @@ export interface Player {
   aiRecommendation: string;
   aiWhy: string;
   avatarSeed: string;
+  // Public signup fields — populated only for real player-form/signal
+  // submissions from the marketing site, null for AI-prospected or
+  // manually-added players. Never fabricated when unknown.
+  ageGroup: string | null; // raw self-reported bracket (e.g. "18-24") — exact age isn't collected on every form
+  contactEmail: string | null;
+  contactPhone: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  signupNote: string | null; // "why should I be selected" free text
+  signupSource: string | null; // which public form/channel, e.g. "site-register", "signal:lausanne01"
+  positionNote: string | null; // raw free-text position when it didn't cleanly map to the enum above
 }
 
 // ── Clubs ───────────────────────────────────────────────────

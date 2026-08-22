@@ -17,8 +17,28 @@ create table if not exists players (
   ai_recommendation text not null,
   ai_why text not null,
   avatar_seed text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  age_group text,
+  contact_email text,
+  contact_phone text,
+  instagram text,
+  tiktok text,
+  signup_note text,
+  signup_source text,
+  position_note text
 );
+
+-- Safe to run against an already-created players table too — adds the
+-- columns the public signup endpoint (app/api/public/player-signup)
+-- writes to for real player-form / signal-campaign submissions.
+alter table players add column if not exists age_group text;
+alter table players add column if not exists contact_email text;
+alter table players add column if not exists contact_phone text;
+alter table players add column if not exists instagram text;
+alter table players add column if not exists tiktok text;
+alter table players add column if not exists signup_note text;
+alter table players add column if not exists signup_source text;
+alter table players add column if not exists position_note text;
 
 create table if not exists clubs (
   id text primary key,

@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
+// Cross-origin lead-intake endpoints called directly by the public
+// Panna League marketing site (a separate deployment) — never carries
+// the session cookie, so it must stay outside the passcode gate.
+const PUBLIC_PATH_PREFIXES = ["/api/public/"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.has(pathname)) {
+  if (PUBLIC_PATHS.has(pathname) || PUBLIC_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 

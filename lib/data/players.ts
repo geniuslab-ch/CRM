@@ -135,6 +135,14 @@ export function generatePlayers(count = 50): Player[] {
       aiRecommendation: text,
       aiWhy: why,
       avatarSeed: `${i}-${name}`,
+      ageGroup: null,
+      contactEmail: null,
+      contactPhone: null,
+      instagram: null,
+      tiktok: null,
+      signupNote: null,
+      signupSource: null,
+      positionNote: null,
     });
   }
 
