@@ -11,6 +11,9 @@ export const dynamic = "force-dynamic";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
+  // Explicit no-store — a status/date change needs to reach the marketing
+  // site on the next page load, not sit behind a CDN or browser cache.
+  "Cache-Control": "no-store",
 };
 
 export async function OPTIONS() {

@@ -11,6 +11,10 @@ export const dynamic = "force-dynamic";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
+  // Explicit no-store — a status flip (e.g. PRE_LAUNCH -> ANNOUNCED) needs
+  // to reach the marketing site on the next page load, not sit behind a
+  // CDN or browser cache with no expiry hint.
+  "Cache-Control": "no-store",
 };
 
 export async function OPTIONS() {
