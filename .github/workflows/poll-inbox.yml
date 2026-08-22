@@ -1,0 +1,27 @@
+name: Poll Gmail inbox
+
+# Free replacement for Vercel's every-15-minutes Cron Jobs, which requires
+# a Pro plan. GitHub Actions' own scheduler only guarantees "best effort,
+# roughly on schedule" (it can be delayed a few minutes, or occasionally
+# skipped when GitHub's queue is busy) but costs nothing on a repo this
+# size, and vercel.json still carries a once-a-day cron as a fallback in
+# case a run gets skipped.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/poll-inbox
+        run: |
+          status=$(curl -sS -o /tmp/response.json -w "%{http_code}" \
+            -X GET "https://crm-five-snowy-11.vercel.app/api/cron/poll-inbox" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP $status"
+          cat /tmp/response.json
+          if [ "$status" -ge 300 ]; then
+            exit 1
+          fi

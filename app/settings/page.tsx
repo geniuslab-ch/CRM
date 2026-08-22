@@ -101,14 +101,16 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            The Conversation Manager polls Gmail every 15 minutes for replies from known sponsor/club contacts and
-            classifies them automatically (see <code className="rounded bg-surface-2 px-1.5 py-0.5">vercel.json</code>{" "}
-            and <code className="rounded bg-surface-2 px-1.5 py-0.5">/api/cron/poll-inbox</code>). It needs your
-            Google credentials configured (same ones as Calendar/Gmail sending) plus a{" "}
+            The Conversation Manager polls Gmail for replies from known sponsor/club contacts and classifies them
+            automatically (see <code className="rounded bg-surface-2 px-1.5 py-0.5">/api/cron/poll-inbox</code>). It
+            needs your Google credentials configured (same ones as Calendar/Gmail sending) plus a{" "}
             <code className="rounded bg-surface-2 px-1.5 py-0.5">CRON_SECRET</code> environment variable — pick any
-            random string, set it, and redeploy. Vercel automatically authenticates its own cron requests with it; the
-            route refuses every other request. Note: scheduled cron on Vercel&apos;s Hobby plan is limited to once a
-            day — the Pro plan is needed for the 15-minute schedule to actually run that often.
+            random string, set it, and redeploy. The real 15-minute polling runs for free via a GitHub Actions
+            workflow (<code className="rounded bg-surface-2 px-1.5 py-0.5">.github/workflows/poll-inbox.yml</code>)
+            — add the same <code className="rounded bg-surface-2 px-1.5 py-0.5">CRON_SECRET</code> value as a repo
+            secret on GitHub (Settings → Secrets and variables → Actions) so it can authenticate. Vercel&apos;s own
+            cron in <code className="rounded bg-surface-2 px-1.5 py-0.5">vercel.json</code> only runs once a day
+            (all the Hobby plan allows) and is kept purely as a fallback in case a GitHub Actions run gets skipped.
           </p>
         </CardContent>
       </Card>
