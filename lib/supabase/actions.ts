@@ -49,6 +49,13 @@ function num(formData: FormData, key: string, fallback = 0): number {
   return Number.isFinite(v) ? v : fallback;
 }
 
+function numOrNull(formData: FormData, key: string): number | null {
+  const raw = String(formData.get(key) ?? "").trim();
+  if (!raw) return null;
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : null;
+}
+
 export async function addPlayer(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
   const guard = requireSupabase();
   if (guard) return guard;
@@ -359,6 +366,7 @@ export async function addEvent(_prevState: ActionResult, formData: FormData): Pr
     city,
     venue: str(formData, "venue") || null,
     date: str(formData, "date") || null,
+    edition: numOrNull(formData, "edition"),
     playerTarget: num(formData, "playerTarget", 32),
     clubTarget: num(formData, "clubTarget", 10),
     sponsorTarget: num(formData, "sponsorTarget", 8),
@@ -385,6 +393,7 @@ export async function updateEventAction(_prevState: ActionResult, formData: Form
     city,
     venue: str(formData, "venue") || null,
     date: str(formData, "date") || null,
+    edition: numOrNull(formData, "edition"),
     status: str(formData, "status") || "PRE_LAUNCH",
     playerTarget: num(formData, "playerTarget", 32),
     clubTarget: num(formData, "clubTarget", 10),

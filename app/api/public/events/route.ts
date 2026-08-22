@@ -27,6 +27,7 @@ export async function GET() {
         city: e.city,
         venue: e.venue,
         date: e.date, // ISO date or null — the marketing site formats/localizes it
+        edition: e.edition, // real edition number, or null if not set yet
         playerTarget: e.playerTarget,
         status: e.status,
         isPrimary: e.isPrimary,

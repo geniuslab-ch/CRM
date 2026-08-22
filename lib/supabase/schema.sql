@@ -203,16 +203,28 @@ create table if not exists events (
   digital_audience_target int not null default 10000,
   checklist jsonb not null default '[]'::jsonb,
   is_primary boolean not null default false,
+  edition int,
   created_at timestamptz not null default now()
 );
+
+-- Safe to run against an already-created events table too. Nullable —
+-- the marketing site shows "TBD" for an event until the organizer sets a
+-- real edition number, rather than inventing one.
+alter table events add column if not exists edition int;
 
 -- The one real event this whole CRM has been built around so far —
 -- Panna League First, Lausanne. Format (32 players / 1v1) and targets are
 -- real organizer goals, not measurements; date/venue stay null (genuinely
--- TBD) until set for real from the Event Control Center.
-insert into events (id, name, city, venue, event_date, status, player_target, club_target, sponsor_target, digital_audience_target, is_primary)
-values ('event-lausanne-001', 'Panna League First', 'Lausanne', null, null, 'PRE_LAUNCH', 32, 10, 8, 10000, true)
+-- TBD) until set for real from the Event Control Center. It's genuinely
+-- the first edition.
+insert into events (id, name, city, venue, event_date, status, player_target, club_target, sponsor_target, digital_audience_target, is_primary, edition)
+values ('event-lausanne-001', 'Panna League First', 'Lausanne', null, null, 'PRE_LAUNCH', 32, 10, 8, 10000, true, 1)
 on conflict (id) do nothing;
+
+-- Backfills edition = 1 on the Lausanne row for installs where it
+-- already existed before the edition column was added (the insert above
+-- is skipped on conflict, so it wouldn't otherwise get set).
+update events set edition = 1 where id = 'event-lausanne-001' and edition is null;
 
 -- Lock every table down by default: only the service_role key (used
 -- server-side only, never shipped to the browser) can read or write.

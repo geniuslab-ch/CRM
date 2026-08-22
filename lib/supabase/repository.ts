@@ -790,6 +790,7 @@ function rowToEvent(row: any, primaryKpis: LiveDashboardKpis | null): PannaEvent
     sponsorTarget: row.sponsor_target,
     digitalAudienceTarget: row.digital_audience_target,
     checklist: (row.checklist ?? []) as EventChecklistItem[],
+    edition: row.edition ?? null,
     isPrimary,
     playersConfirmed: isPrimary && primaryKpis ? primaryKpis.playersConfirmed : 0,
     clubsConfirmed: isPrimary && primaryKpis ? primaryKpis.clubPartners : 0,
@@ -821,6 +822,7 @@ export async function createEvent(entry: {
   city: string;
   venue: string | null;
   date: string | null;
+  edition: number | null;
   playerTarget: number;
   clubTarget: number;
   sponsorTarget: number;
@@ -836,6 +838,7 @@ export async function createEvent(entry: {
       city: entry.city,
       venue: entry.venue,
       event_date: entry.date,
+      edition: entry.edition,
       status: "PRE_LAUNCH",
       player_target: entry.playerTarget,
       club_target: entry.clubTarget,
@@ -855,6 +858,7 @@ export async function updateEvent(
     city: string;
     venue: string | null;
     date: string | null;
+    edition: number | null;
     status: string;
     playerTarget: number;
     clubTarget: number;
@@ -870,6 +874,7 @@ export async function updateEvent(
       city: entry.city,
       venue: entry.venue,
       event_date: entry.date,
+      edition: entry.edition,
       status: entry.status,
       player_target: entry.playerTarget,
       club_target: entry.clubTarget,

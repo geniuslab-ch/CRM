@@ -86,6 +86,23 @@ export function EditEventDialog({ event }: { event: PannaEvent }) {
               <Input id="eed-date" name="date" type="date" defaultValue={event.date ?? ""} />
             </div>
           </div>
+          <div>
+            <label htmlFor="eed-edition" className="mb-1 block text-xs font-medium text-muted-foreground">
+              Edition number
+            </label>
+            <Input
+              id="eed-edition"
+              name="edition"
+              type="number"
+              min={1}
+              placeholder="e.g. 2 — leave blank if TBD"
+              defaultValue={event.edition ?? ""}
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Shows as &quot;Edition N°X&quot; on the marketing site once this event is announced. Leave blank to
+              show TBD.
+            </p>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label htmlFor="eed-player-target" className="mb-1 block text-xs font-medium text-muted-foreground">

@@ -63,7 +63,9 @@ function PrimaryEventCard({ event: e }: { event: PannaEvent }) {
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Primary event</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Primary event{e.edition ? ` · Edition N°${e.edition}` : ""}
+          </p>
           <h2 className="font-display text-2xl font-bold">{e.name}</h2>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
@@ -108,7 +110,10 @@ function SecondaryEventCard({ event: e }: { event: PannaEvent }) {
     <Card className="p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-semibold">{e.name}</h3>
+          <h3 className="font-semibold">
+            {e.name}
+            {e.edition && <span className="ml-1.5 font-normal text-muted-foreground">· Edition N°{e.edition}</span>}
+          </h3>
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" aria-hidden="true" />
             {e.city} · {e.date ?? "Date TBD"}

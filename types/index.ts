@@ -364,6 +364,9 @@ export interface PannaEvent {
   sponsorTarget: number;
   digitalAudienceTarget: number;
   checklist: EventChecklistItem[];
+  // Real edition number in the Panna League series (e.g. 1 for the
+  // Lausanne pilot). Null until the organizer sets it — never inferred.
+  edition: number | null;
   // True for exactly one event — recruitment isn't split per event yet
   // (one shared player/club/sponsor pipeline), so confirmed-count and
   // commercial-pipeline stats are only computed for this one; any other
