@@ -149,6 +149,23 @@ function clip(text: string, max = 240): string {
   return `${lastSpace > 0 ? cut.slice(0, lastSpace) : cut}…`;
 }
 
+// Internal research fields sometimes carry a trailing "Sources: url1, url2"
+// citation list (added for CRM provenance, never meant for a sponsor-facing
+// document) — strip it before anything reaches the PDF, regardless of
+// whether the field was written before or after that separation existed.
+function stripSources(text: string): string {
+  return text.replace(/\s*Sources?:\s*https?:\/\/[\s\S]*$/i, "").trim();
+}
+
+// "Why Panna League" reads as a scannable bullet list, matching the
+// Benefits section, rather than dense prose — split on sentence boundaries.
+function toBullets(text: string): string[] {
+  return stripSources(text)
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9(])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function CheckGlyph() {
   return (
     <Svg width={11} height={11} style={{ marginRight: 8, marginTop: 2 }}>
@@ -226,8 +243,12 @@ export function ProposalDocument({ sponsor, tier }: { sponsor: Sponsor; tier: Sp
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Why Panna League</Text>
-            <Text style={styles.paragraph}>{sponsor.fitWhy}</Text>
-            <Text style={[styles.paragraph, { marginTop: 6 }]}>{sponsor.research.reasonToSponsor}</Text>
+            {[...toBullets(sponsor.fitWhy), ...toBullets(sponsor.research.reasonToSponsor)].map((line, i) => (
+              <View key={i} style={styles.benefitRow}>
+                <CheckGlyph />
+                <Text style={styles.benefitText}>{line}</Text>
+              </View>
+            ))}
           </View>
 
           <View style={styles.section}>
