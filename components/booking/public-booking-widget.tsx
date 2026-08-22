@@ -20,21 +20,24 @@ export function PublicBookingWidget({
   category,
   relatedId,
   defaultName,
+  defaultEmail,
 }: {
   organization: string;
   category: ConversationCategory;
   relatedId: string;
   defaultName: string;
+  defaultEmail: string;
 }) {
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [live, setLive] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);
   const [name, setName] = useState(defaultName);
+  const [email, setEmail] = useState(defaultEmail);
   const [notes, setNotes] = useState("");
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState<{ mock: boolean; eventLink?: string } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ mock: boolean; eventLink?: string; meetLink?: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,13 +70,14 @@ export function PublicBookingWidget({
           slot: selected,
           withName: name.trim(),
           notes: notes || `Booked directly by ${organization} via their booking link.`,
+          attendeeEmail: email.trim() || undefined,
           logAs: { organization, category, relatedId },
           bookedBy: "CONTACT",
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Booking failed");
       const result = await res.json();
-      setConfirmed({ mock: result.mock, eventLink: result.eventLink });
+      setConfirmed({ mock: result.mock, eventLink: result.eventLink, meetLink: result.meetLink });
     } catch (err) {
       setBookError(err instanceof Error ? err.message : "Couldn't book — please try again.");
     } finally {
@@ -127,6 +131,12 @@ export function PublicBookingWidget({
                 </label>
                 <Input id="pb-name" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
+              <div>
+                <label htmlFor="pb-email" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Your email — we&apos;ll send the calendar invite here
+                </label>
+                <Input id="pb-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -157,18 +167,32 @@ export function PublicBookingWidget({
             <p className="text-xs text-muted-foreground">
               {confirmed.mock
                 ? "No calendar integration is connected on our end yet — nothing was actually added to a calendar."
-                : "We've added this to our calendar and you should receive a calendar invite."}
+                : email.trim()
+                ? `We've added this to our calendar and emailed a calendar invite to ${email.trim()}.`
+                : "We've added this to our calendar. No email was sent — you didn't enter one above."}
             </p>
-            {confirmed.eventLink && (
-              <a
-                href={confirmed.eventLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                View event <ExternalLink className="h-3 w-3" aria-hidden="true" />
-              </a>
-            )}
+            <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1">
+              {confirmed.eventLink && (
+                <a
+                  href={confirmed.eventLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  View event <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+              )}
+              {confirmed.meetLink && (
+                <a
+                  href={confirmed.meetLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Google Meet link <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
       )}

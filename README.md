@@ -150,11 +150,9 @@ To activate:
 
 1. Paste `lib/supabase/schema.sql` into your Supabase project's **SQL Editor** and run it once — creates `players`, `clubs`, `sponsors` with Row Level Security locked to the `service_role` key (the `anon` key gets zero access by default).
 2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` (from Supabase → Settings → API).
-3. Populate the tables either by running `npm run supabase:seed` (uses `lib/data/*`'s generators as seed content — handy for a first demo-quality dataset) or `npx tsx scripts/export-csv.ts` + Supabase Table Editor's **Import data from CSV**, then start replacing rows with real players/clubs/sponsors as you recruit them.
+3. Populate the tables from the UI itself — every list page (Players, Clubs, Sponsors, Event Control Center) has a real "Add" dialog backed by a Server Action in `lib/supabase/actions.ts`. There's no bundled demo-data seed script; every row you add is a real record you typed in, or a real public form submission, never a fabricated one.
 
-`lib/data/players.ts` / `clubs.ts` / `sponsors.ts` still exist — they're the seed-data generators referenced above, and a few dashboard/analytics widgets that haven't been converted to live data yet still use them (see §18) — but the repository layer that the CRM pages actually read from never imports them.
-
-**Writes** (confirming a player, moving a sponsor stage, editing a club) aren't wired yet — today, edit data directly in Supabase's Table Editor. Adding write actions from the UI is a natural next step: [Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations) calling `supabase.from(table).update(...)` from `lib/supabase/repository.ts`.
+**Writes** (confirming a player, moving a sponsor stage, editing a club, deleting a record) are fully wired via Server Actions in `lib/supabase/actions.ts` calling `supabase.from(table).insert/update/delete(...)`.
 
 ## 12. Real Calendar & Gmail (Google) — already wired up
 

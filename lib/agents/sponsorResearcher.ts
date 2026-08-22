@@ -1,7 +1,7 @@
 // Sponsor Researcher agent
 // Builds the "WHY THIS COMPANY?" narrative + package suggestion for every
 // sponsor prospect. Full research payload lives on Sponsor.research
-// (see lib/data/sponsors.ts). This module exposes the "why" formatter
+// (see types/index.ts). This module exposes the "why" formatter
 // used across the Sponsor Detail page and CRM cards.
 
 import { Sponsor } from "@/types";

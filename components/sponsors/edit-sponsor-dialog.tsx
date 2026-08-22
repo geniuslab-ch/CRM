@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ContactFields } from "@/components/ui/contact-fields";
 import { updateSponsor } from "@/lib/supabase/actions";
 import { SWISS_CITIES } from "@/lib/data/seed";
 import { SPONSOR_CATEGORIES } from "@/lib/agents/sponsorFinder";
@@ -85,32 +86,7 @@ export function EditSponsorDialog({ sponsor }: { sponsor: Sponsor }) {
               ))}
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="ed-contact-name" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact name *
-              </label>
-              <Input id="ed-contact-name" name="contactName" required defaultValue={sponsor.research.contactPerson.name} />
-            </div>
-            <div>
-              <label htmlFor="ed-contact-role" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact role
-              </label>
-              <Input id="ed-contact-role" name="contactRole" defaultValue={sponsor.research.contactPerson.role} />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="ed-contact-email" className="mb-1 block text-xs font-medium text-muted-foreground">
-              Contact email *
-            </label>
-            <Input
-              id="ed-contact-email"
-              name="contactEmail"
-              type="email"
-              required
-              defaultValue={sponsor.research.contactPerson.email}
-            />
-          </div>
+          <ContactFields defaultContacts={sponsor.contacts} withRole />
           <div>
             <label htmlFor="ed-value" className="mb-1 block text-xs font-medium text-muted-foreground">
               Potential value (CHF)

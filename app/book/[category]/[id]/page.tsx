@@ -9,6 +9,7 @@ export default async function PublicBookingPage({ params }: { params: { category
 
   let organization: string;
   let defaultName: string;
+  let defaultEmail: string;
 
   if (params.category === "sponsor") {
     const { data: sponsors } = await getSponsors();
@@ -16,12 +17,14 @@ export default async function PublicBookingPage({ params }: { params: { category
     if (!sponsor) notFound();
     organization = sponsor.name;
     defaultName = sponsor.research.contactPerson.name;
+    defaultEmail = sponsor.research.contactPerson.email;
   } else {
     const { data: clubs } = await getClubs();
     const club = clubs.find((c) => c.id === params.id);
     if (!club) notFound();
     organization = club.name;
     defaultName = club.contactName;
+    defaultEmail = club.contactEmail;
   }
 
   return (
@@ -31,6 +34,7 @@ export default async function PublicBookingPage({ params }: { params: { category
         category={params.category === "sponsor" ? "SPONSOR" : "CLUB"}
         relatedId={params.id}
         defaultName={defaultName}
+        defaultEmail={defaultEmail}
       />
     </div>
   );

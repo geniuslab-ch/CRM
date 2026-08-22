@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     contactName,
     organisation,
     organisationType: field(formData, "organisation_type", 60) || null,
+    city: field(formData, "city", 100) || null,
     contactEmail,
     contactPhone: field(formData, "phone", 60) || null,
     instagram: field(formData, "instagram", 80) || null,

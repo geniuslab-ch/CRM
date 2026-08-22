@@ -1,5 +1,5 @@
 // Sponsor Finder agent
-// Fit scoring model lives in lib/data/sponsors.ts (generateSponsors).
+// Fit scoring model lives on Sponsor.fit (see types/index.ts).
 // Weighting documented here for transparency / future tuning.
 
 export const SPONSOR_FIT_WEIGHTS = {

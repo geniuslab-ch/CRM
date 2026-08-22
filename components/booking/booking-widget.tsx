@@ -23,12 +23,14 @@ interface Slot {
 
 export function BookingWidget({
   contactName,
+  contactEmail,
   organization,
   category,
   relatedId,
   bookingCategory,
 }: {
   contactName: string;
+  contactEmail: string;
   organization: string;
   category: ConversationCategory;
   relatedId: string;
@@ -41,7 +43,7 @@ export function BookingWidget({
   const [notes, setNotes] = useState(`Discussion with ${organization}.`);
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState<{ mock: boolean; eventLink?: string } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ mock: boolean; eventLink?: string; meetLink?: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
   const selfServeLink = bookingUrl(bookingCategory, relatedId);
@@ -87,13 +89,14 @@ export function BookingWidget({
           slot: selected,
           withName: contactName,
           notes,
+          attendeeEmail: contactEmail || undefined,
           logAs: { organization, category, relatedId },
           bookedBy: "ORGANIZER",
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Booking failed");
       const result = await res.json();
-      setConfirmed({ mock: result.mock, eventLink: result.eventLink });
+      setConfirmed({ mock: result.mock, eventLink: result.eventLink, meetLink: result.meetLink });
     } catch (err) {
       setBookError(err instanceof Error ? err.message : "Couldn't book — please try again.");
     } finally {
@@ -169,6 +172,13 @@ export function BookingWidget({
                     No Google Calendar connected — this will confirm a mock slot only, nothing gets booked for real.
                   </p>
                 )}
+                {live && (
+                  <p className="text-xs text-muted-foreground">
+                    {contactEmail
+                      ? `A calendar invite with a Google Meet link will be emailed to ${contactEmail}.`
+                      : "No contact email on file — no calendar invite will be sent, only added to your own calendar."}
+                  </p>
+                )}
               </>
             )}
             {bookError && <p className="text-sm text-danger">{bookError}</p>}
@@ -183,18 +193,32 @@ export function BookingWidget({
               <p className="text-xs text-muted-foreground">
                 {confirmed.mock
                   ? "No calendar integration is connected, so nothing was actually added to a calendar."
-                  : "Added to your Google Calendar and logged to the CRM."}
+                  : contactEmail
+                  ? `Added to your Google Calendar and logged to the CRM. A calendar invite was emailed to ${contactEmail}.`
+                  : "Added to your Google Calendar and logged to the CRM. No contact email on file, so no invite was sent."}
               </p>
-              {confirmed.eventLink && (
-                <a
-                  href={confirmed.eventLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  View event <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                </a>
-              )}
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                {confirmed.eventLink && (
+                  <a
+                    href={confirmed.eventLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    View event <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                  </a>
+                )}
+                {confirmed.meetLink && (
+                  <a
+                    href={confirmed.meetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    Google Meet link <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         )}

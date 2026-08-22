@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "google:auth": "node scripts/google-auth.mjs",
-    "supabase:seed": "tsx scripts/seed-supabase.ts"
+    "google:auth": "node scripts/google-auth.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

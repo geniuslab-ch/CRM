@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ContactFields } from "@/components/ui/contact-fields";
 import { addSponsor } from "@/lib/supabase/actions";
 import { SWISS_CITIES } from "@/lib/data/seed";
 import { SPONSOR_CATEGORIES } from "@/lib/agents/sponsorFinder";
@@ -84,26 +85,7 @@ export function AddSponsorDialog() {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="sd-contact-name" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact name *
-              </label>
-              <Input id="sd-contact-name" name="contactName" required placeholder="Full name" />
-            </div>
-            <div>
-              <label htmlFor="sd-contact-role" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact role
-              </label>
-              <Input id="sd-contact-role" name="contactRole" placeholder="e.g. Marketing Director" />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="sd-contact-email" className="mb-1 block text-xs font-medium text-muted-foreground">
-              Contact email *
-            </label>
-            <Input id="sd-contact-email" name="contactEmail" type="email" required placeholder="A real address — this is who Outreach will email" />
-          </div>
+          <ContactFields withRole />
           <div>
             <label htmlFor="sd-value" className="mb-1 block text-xs font-medium text-muted-foreground">
               Potential value (CHF)

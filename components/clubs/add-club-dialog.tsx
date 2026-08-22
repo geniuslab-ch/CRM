@@ -7,6 +7,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ContactFields } from "@/components/ui/contact-fields";
 import { addClub } from "@/lib/supabase/actions";
 import { SWISS_CITIES } from "@/lib/data/seed";
 
@@ -60,20 +61,7 @@ export function AddClubDialog() {
               ))}
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="cd-contact-name" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact name *
-              </label>
-              <Input id="cd-contact-name" name="contactName" required placeholder="Full name" />
-            </div>
-            <div>
-              <label htmlFor="cd-contact-email" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact email *
-              </label>
-              <Input id="cd-contact-email" name="contactEmail" type="email" required placeholder="name@club.ch" />
-            </div>
-          </div>
+          <ContactFields withRole={false} />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="cd-website" className="mb-1 block text-xs font-medium text-muted-foreground">

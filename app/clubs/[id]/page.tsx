@@ -118,6 +118,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
           <ClubOutreach club={club} />
           <BookingWidget
             contactName={club.contactName}
+            contactEmail={club.contactEmail}
             organization={club.name}
             category="CLUB"
             relatedId={club.id}

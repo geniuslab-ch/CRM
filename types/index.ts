@@ -64,6 +64,21 @@ export interface Player {
   nominatedBy: string | null; // "Name (contact)" of the friend who nominated this player, when applicable
 }
 
+// ── Contacts ────────────────────────────────────────────────
+// Up to 3 real people per club/sponsor. Exactly one is primary — the
+// default recipient for outreach and the calendar-invite attendee. The
+// legacy single contactName/contactEmail (Club) and
+// research.contactPerson (Sponsor) fields always mirror the primary
+// contact, so everywhere else in the app that reads them keeps working
+// unchanged; contacts is the new source of truth going forward.
+
+export interface Contact {
+  name: string;
+  email: string;
+  role?: string;
+  isPrimary: boolean;
+}
+
 // ── Clubs ───────────────────────────────────────────────────
 
 export type ClubStatus =
@@ -82,6 +97,10 @@ export interface Club {
   city: SwissCity;
   contactName: string;
   contactEmail: string;
+  // Up to 3 real contacts — see the Contact type above. Empty for clubs
+  // added before this feature; contactName/contactEmail still work as
+  // the single fallback contact in that case.
+  contacts: Contact[];
   website: string;
   playersIdentified: number;
   status: ClubStatus;
@@ -160,6 +179,10 @@ export interface Sponsor {
   city: SwissCity;
   fit: SponsorFitScore;
   fitWhy: string;
+  // Up to 3 real contacts — see the Contact type above. Empty for
+  // sponsors added before this feature; research.contactPerson still
+  // works as the single fallback contact in that case.
+  contacts: Contact[];
   potentialValue: number; // CHF
   stage: SponsorStage;
   lastActivity: string;

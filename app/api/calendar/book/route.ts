@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
     slot?: CalendarSlot;
     withName?: string;
     notes?: string;
+    attendeeEmail?: string;
     logAs?: { organization: string; category: ConversationCategory; relatedId?: string };
     bookedBy?: "ORGANIZER" | "CONTACT";
     _gotcha?: string; // honeypot, mirrors the public signup forms
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const provider = getCalendarProvider();
-    const result = await provider.bookMeeting(body.slot, body.withName, body.notes);
+    const result = await provider.bookMeeting(body.slot, body.withName, body.notes, body.attendeeEmail || undefined);
 
     // Only log a real booking — a mock confirmation (no calendar
     // connected) never actually happened, so it shouldn't create a "real"

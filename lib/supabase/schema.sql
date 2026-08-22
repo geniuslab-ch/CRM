@@ -74,6 +74,17 @@ alter table clubs add column if not exists tiktok text;
 alter table clubs add column if not exists inquiry_message text;
 alter table clubs add column if not exists signup_source text;
 
+-- Up to 3 real contacts: jsonb array of {name, email, role?, isPrimary}.
+-- contact_name/contact_email above always mirror whichever one is
+-- primary (kept in sync on every write), so every existing feature that
+-- reads them keeps working unchanged. Backfills every existing club to a
+-- single-entry contacts array from its current contact_name/contact_email
+-- so nothing is lost.
+alter table clubs add column if not exists contacts jsonb not null default '[]'::jsonb;
+update clubs
+set contacts = jsonb_build_array(jsonb_build_object('name', contact_name, 'email', contact_email, 'isPrimary', true))
+where contacts = '[]'::jsonb and contact_email <> '';
+
 create table if not exists sponsors (
   id text primary key,
   name text not null,
@@ -99,6 +110,22 @@ alter table sponsors add column if not exists activation jsonb;
 -- real email back-and-forth settled on). Feeds the "suggest content ideas
 -- from this deal" AI action. Null until the organizer fills it in.
 alter table sponsors add column if not exists deal_terms text;
+
+-- Up to 3 real contacts: jsonb array of {name, email, role?, isPrimary}.
+-- research->'contactPerson' above always mirrors whichever one is
+-- primary (kept in sync on every write), so every existing feature that
+-- reads it keeps working unchanged. Backfills every existing sponsor to
+-- a single-entry contacts array from its current research.contactPerson
+-- so nothing is lost.
+alter table sponsors add column if not exists contacts jsonb not null default '[]'::jsonb;
+update sponsors
+set contacts = jsonb_build_array(jsonb_build_object(
+  'name', research->'contactPerson'->>'name',
+  'email', research->'contactPerson'->>'email',
+  'role', research->'contactPerson'->>'role',
+  'isPrimary', true
+))
+where contacts = '[]'::jsonb and coalesce(research->'contactPerson'->>'email', '') <> '';
 
 -- Activity log — one row per real message, either direction. Outbound rows
 -- (direction='OUTBOUND') are messages actually sent through the app.

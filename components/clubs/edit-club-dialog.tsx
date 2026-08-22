@@ -7,6 +7,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ContactFields } from "@/components/ui/contact-fields";
 import { updateClub } from "@/lib/supabase/actions";
 import { SWISS_CITIES } from "@/lib/data/seed";
 import { Club } from "@/types";
@@ -66,20 +67,7 @@ export function EditClubDialog({ club }: { club: Club }) {
               ))}
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="ecd-contact-name" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact name *
-              </label>
-              <Input id="ecd-contact-name" name="contactName" required defaultValue={club.contactName} />
-            </div>
-            <div>
-              <label htmlFor="ecd-contact-email" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Contact email *
-              </label>
-              <Input id="ecd-contact-email" name="contactEmail" type="email" required defaultValue={club.contactEmail} />
-            </div>
-          </div>
+          <ContactFields defaultContacts={club.contacts} withRole={false} />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="ecd-website" className="mb-1 block text-xs font-medium text-muted-foreground">

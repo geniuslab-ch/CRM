@@ -1,7 +1,7 @@
 // Club Finder agent
 // Pipeline: IDENTIFIED → CONTACTED → INTERESTED → PLAYERS_PROPOSED → CONFIRMED → PARTNER
 // Rule: first-contact outreach is always framed as player recruitment, never
-// as a commercial partnership ask — see engagementType in lib/data/clubs.ts.
+// as a commercial partnership ask — see Club.engagementType in types/index.ts.
 
 export const CLUB_PIPELINE_ORDER = [
   "IDENTIFIED",

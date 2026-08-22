@@ -17,6 +17,10 @@ interface ChallengeEmailDraft {
 
 export function ClubOutreach({ club }: { club: Club }) {
   const registrationUrl = clubRegistrationUrl(club.name);
+  const contacts = club.contacts.length > 0 ? club.contacts : [{ name: club.contactName, email: club.contactEmail, isPrimary: true }];
+  const primaryIdx = Math.max(0, contacts.findIndex((c) => c.isPrimary));
+  const [sendToIdx, setSendToIdx] = useState(primaryIdx);
+  const sendTo = contacts[sendToIdx] ?? contacts[0];
 
   const [draft, setDraft] = useState<ChallengeEmailDraft | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -34,8 +38,8 @@ export function ClubOutreach({ club }: { club: Club }) {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sentVia, setSentVia] = useState<{ mock: boolean } | null>(null);
 
-  const hasNoEmail = !club.contactEmail.trim();
-  const isPlaceholderEmail = !hasNoEmail && PLACEHOLDER_EMAIL_HINT.test(club.contactEmail);
+  const hasNoEmail = !sendTo.email.trim();
+  const isPlaceholderEmail = !hasNoEmail && PLACEHOLDER_EMAIL_HINT.test(sendTo.email);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -103,11 +107,11 @@ export function ClubOutreach({ club }: { club: Club }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: club.contactEmail,
+          to: sendTo.email,
           subject: draft.subjects[subjectIdx],
           message: body,
           logAs: {
-            contactName: club.contactName,
+            contactName: sendTo.name || club.contactName,
             organization: club.name,
             category: "CLUB",
             relatedId: club.id,
@@ -222,10 +226,31 @@ export function ClubOutreach({ club }: { club: Club }) {
                 {generating ? "Writing…" : "Regenerate"}
               </Button>
 
-              {!hasNoEmail && (
-                <p className="text-xs text-muted-foreground">
-                  Will send to <span className="font-medium text-foreground">{club.contactEmail}</span>
-                </p>
+              {contacts.length > 1 ? (
+                <div>
+                  <label htmlFor="co-send-to" className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Send to
+                  </label>
+                  <select
+                    id="co-send-to"
+                    value={sendToIdx}
+                    onChange={(e) => setSendToIdx(Number(e.target.value))}
+                    className="focus-ring w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  >
+                    {contacts.map((c, i) => (
+                      <option key={i} value={i} disabled={!c.email.trim()}>
+                        {c.isPrimary ? "★ " : ""}
+                        {c.name || "(no name)"} — {c.email.trim() || "no email"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                !hasNoEmail && (
+                  <p className="text-xs text-muted-foreground">
+                    Will send to <span className="font-medium text-foreground">{sendTo.email}</span>
+                  </p>
+                )
               )}
               {hasNoEmail && !sentVia && (
                 <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">

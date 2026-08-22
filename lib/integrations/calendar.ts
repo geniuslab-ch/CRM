@@ -17,7 +17,12 @@ export interface CalendarSlot {
 
 export interface CalendarProvider {
   getAvailableSlots(): Promise<CalendarSlot[]>;
-  bookMeeting(slot: CalendarSlot, withName: string, notes?: string): Promise<{ confirmed: boolean; eventLink?: string }>;
+  bookMeeting(
+    slot: CalendarSlot,
+    withName: string,
+    notes?: string,
+    attendeeEmail?: string
+  ): Promise<{ confirmed: boolean; eventLink?: string; meetLink?: string }>;
 }
 
 export class MockCalendarProvider implements CalendarProvider {
@@ -86,17 +91,48 @@ export class GoogleCalendarProvider implements CalendarProvider {
     return slots;
   }
 
-  async bookMeeting(slot: CalendarSlot, withName: string, notes?: string): Promise<{ confirmed: boolean; eventLink?: string }> {
-    const { data } = await this.calendar.events.insert({
-      calendarId: "primary",
-      requestBody: {
-        summary: `Panna League x ${withName}`,
-        description: notes ?? "Booked automatically by the Panna League AI Command Center.",
-        start: { dateTime: slot.startISO },
-        end: { dateTime: slot.endISO },
-      },
-    });
-    return { confirmed: true, eventLink: data.htmlLink ?? undefined };
+  async bookMeeting(
+    slot: CalendarSlot,
+    withName: string,
+    notes?: string,
+    attendeeEmail?: string
+  ): Promise<{ confirmed: boolean; eventLink?: string; meetLink?: string }> {
+    const baseRequestBody = {
+      summary: `Panna League x ${withName}`,
+      description: notes ?? "Booked automatically by the Panna League AI Command Center.",
+      start: { dateTime: slot.startISO },
+      end: { dateTime: slot.endISO },
+      attendees: attendeeEmail ? [{ email: attendeeEmail }] : undefined,
+    };
+
+    // Try with a real Google Meet link first — falls back to a plain
+    // calendar event (still with the attendee invite) if Meet
+    // conferencing isn't available on this calendar account, rather than
+    // failing the whole booking over a bonus feature.
+    try {
+      const { data } = await this.calendar.events.insert({
+        calendarId: "primary",
+        sendUpdates: attendeeEmail ? "all" : "none",
+        conferenceDataVersion: 1,
+        requestBody: {
+          ...baseRequestBody,
+          conferenceData: { createRequest: { requestId: `panna-${Date.now()}` } },
+        },
+      });
+      return {
+        confirmed: true,
+        eventLink: data.htmlLink ?? undefined,
+        meetLink: data.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ?? undefined,
+      };
+    } catch (err) {
+      console.error("Booking with Google Meet conferencing failed, retrying without it:", err);
+      const { data } = await this.calendar.events.insert({
+        calendarId: "primary",
+        sendUpdates: attendeeEmail ? "all" : "none",
+        requestBody: baseRequestBody,
+      });
+      return { confirmed: true, eventLink: data.htmlLink ?? undefined };
+    }
   }
 }
 

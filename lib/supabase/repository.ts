@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseServerClient, isSupabaseConfigured } from "./client";
-import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus, ActivationConcept, PannaEvent, EventChecklistItem } from "@/types";
+import { Player, Club, Sponsor, Conversation, ConversationCategory, Meeting, ContentOpportunity, ContentStatus, ActivationConcept, PannaEvent, EventChecklistItem, Contact } from "@/types";
 import { PlayerCandidate, ClubCandidate, SponsorCandidate, SponsorProfileUpdate } from "@/lib/agents/prospectResearch";
 
 // Server-only "live data" layer — pages import getPlayers()/getClubs()/
@@ -55,6 +55,16 @@ function rowToPlayer(row: any): Player {
   };
 }
 
+// Defensive fallback for rows created (or read) before the contacts
+// migration ran on this Supabase project — synthesizes a single-entry
+// contacts array from the legacy single contact fields so the UI always
+// has at least the one real contact to show, never a fabricated one.
+function contactsOrFallback(rawContacts: unknown, fallbackName: string, fallbackEmail: string, fallbackRole?: string): Contact[] {
+  if (Array.isArray(rawContacts) && rawContacts.length > 0) return rawContacts as Contact[];
+  if (!fallbackEmail) return [];
+  return [{ name: fallbackName, email: fallbackEmail, role: fallbackRole, isPrimary: true }];
+}
+
 function rowToClub(row: any): Club {
   return {
     id: row.id,
@@ -62,6 +72,7 @@ function rowToClub(row: any): Club {
     city: row.city,
     contactName: row.contact_name,
     contactEmail: row.contact_email,
+    contacts: contactsOrFallback(row.contacts, row.contact_name, row.contact_email),
     website: row.website,
     playersIdentified: row.players_identified,
     status: row.status,
@@ -92,6 +103,12 @@ function rowToSponsor(row: any): Sponsor {
     lastActivityDate: row.last_activity_date,
     nextAction: row.next_action,
     research: row.research,
+    contacts: contactsOrFallback(
+      row.contacts,
+      row.research?.contactPerson?.name ?? "",
+      row.research?.contactPerson?.email ?? "",
+      row.research?.contactPerson?.role
+    ),
     aiRecommendation: row.ai_recommendation,
     activation: row.activation ?? null,
     dealTerms: row.deal_terms ?? null,
@@ -633,6 +650,7 @@ export interface ClubSignup {
   contactName: string; // the person filling out the form
   organisation: string; // club/academy/venue name
   organisationType: string | null;
+  city: string | null; // which real Panna League city they're signing up for
   contactEmail: string;
   contactPhone: string | null;
   instagram: string | null;
@@ -649,7 +667,7 @@ export async function createClubFromSignup(s: ClubSignup): Promise<{ ok: boolean
     .insert({
       id,
       name: s.organisation,
-      city: "Not provided",
+      city: s.city || "Not provided",
       contact_name: s.contactName,
       contact_email: s.contactEmail,
       website: "",
@@ -914,6 +932,23 @@ export async function addEventChecklistItem(eventId: string, label: string): Pro
   if (fetchError || !existing) return { ok: false, error: fetchError?.message ?? "Event not found." };
 
   const checklist = [...((existing.checklist ?? []) as EventChecklistItem[]), { id: `chk-${crypto.randomUUID()}`, label, done: false }];
+  const { error } = await supabase.from("events").update({ checklist }).eq("id", eventId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Bulk add — used by the "use suggested checklist" button, which offers a
+// realistic launch-readiness template (venue, targets, promo, etc.) as a
+// starting point. Every item starts unchecked; it's a real task list to
+// work through, not a claim that any of it is already done.
+export async function addEventChecklistItems(eventId: string, labels: string[]): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const supabase = getSupabaseServerClient();
+  const { data: existing, error: fetchError } = await supabase.from("events").select("checklist").eq("id", eventId).single();
+  if (fetchError || !existing) return { ok: false, error: fetchError?.message ?? "Event not found." };
+
+  const newItems = labels.map((label) => ({ id: `chk-${crypto.randomUUID()}`, label, done: false }));
+  const checklist = [...((existing.checklist ?? []) as EventChecklistItem[]), ...newItems];
   const { error } = await supabase.from("events").update({ checklist }).eq("id", eventId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };

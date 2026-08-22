@@ -1,11 +1,12 @@
 import { Agent, AgentTask } from "@/types";
 import { makeRng } from "./seed";
-import { players } from "./players";
-import { clubs } from "./clubs";
-import { sponsors } from "./sponsors";
-import { conversations } from "./conversations";
-import { meetings } from "./meetings";
-import { contentOpportunities } from "./content";
+
+// Illustrative-only base data: role descriptions, reasoning examples, and
+// accent color. Every number here (headline, tasksCompleted, metricValue,
+// averageScore, potentialPipeline) is unconditionally overwritten by
+// lib/agents/liveTeam.ts's real Supabase-derived values before this ever
+// reaches the UI — see getLiveAgents(). Kept as plain placeholder text/0
+// here rather than fabricated counts, since nothing here is ever shown.
 
 const rng = makeRng(8800);
 
@@ -50,27 +51,16 @@ const contentActivity: AgentTask[] = [
   { id: "act-ct-2", agentId: "content", summary: "Flagged a sponsor activation reel opportunity for Decathlon.", timestamp: rng.daysAgoISO(2, 0) },
 ];
 
-const researchedSponsors = sponsors.filter((s) => s.stage !== "PROSPECT").length;
-const outreachSent = sponsors.filter((s) => !["PROSPECT", "RESEARCH"].includes(s.stage)).length;
-const qualifiedMeetings = meetings.length;
-const avgSponsorScore = Math.round(
-  sponsors.reduce((sum, s) => sum + s.fit.overall, 0) / sponsors.length
-);
-const potentialPipeline = sponsors
-  .filter((s) => !["LOST"].includes(s.stage))
-  .reduce((sum, s) => sum + s.potentialValue, 0);
-
 export const agents: Agent[] = [
   {
     id: "player-recruiter",
     name: "Player Recruiter",
     role: "Finds and scores potential Panna players across Switzerland.",
     status: "ACTIVE",
-    headline: `${players.length} prospects analyzed`,
-    tasksCompleted: 94,
+    headline: "Prospects analyzed",
+    tasksCompleted: 0,
     metricLabel: "Players identified",
-    metricValue: String(players.length),
-    averageScore: Math.round(players.reduce((s, p) => s + p.playerScore, 0) / players.length),
+    metricValue: "0",
     recentActivity: playerActivity,
     reasoningExamples: [
       "High-priority recruitment target — elite technical score and strong local audience.",
@@ -84,10 +74,10 @@ export const agents: Agent[] = [
     name: "Club Finder",
     role: "Identifies football clubs that can supply players or become partners.",
     status: "ACTIVE",
-    headline: `${clubs.length} clubs identified`,
-    tasksCompleted: 61,
+    headline: "Clubs identified",
+    tasksCompleted: 0,
     metricLabel: "Clubs identified",
-    metricValue: String(clubs.length),
+    metricValue: "0",
     recentActivity: clubActivity,
     reasoningExamples: [
       "Leads with player recruitment, not commercial partnership, on first contact.",
@@ -100,12 +90,10 @@ export const agents: Agent[] = [
     name: "Sponsor Finder",
     role: "Identifies companies that could sponsor Panna League and scores fit.",
     status: "ACTIVE",
-    headline: `${sponsors.length} prospects found`,
-    tasksCompleted: 128,
+    headline: "Prospects found",
+    tasksCompleted: 0,
     metricLabel: "Prospects found",
-    metricValue: String(sponsors.length),
-    averageScore: avgSponsorScore,
-    potentialPipeline,
+    metricValue: "0",
     recentActivity: sponsorFinderActivity,
     reasoningExamples: [
       "High audience overlap with Panna League's core demographic drives fit score up.",
@@ -118,10 +106,10 @@ export const agents: Agent[] = [
     name: "Researcher",
     role: "Builds a deep company brief for every sponsor prospect.",
     status: "ACTIVE",
-    headline: `${researchedSponsors} companies researched`,
-    tasksCompleted: 73,
+    headline: "Companies researched",
+    tasksCompleted: 0,
     metricLabel: "Companies researched",
-    metricValue: String(researchedSponsors),
+    metricValue: "0",
     recentActivity: researcherActivity,
     reasoningExamples: [
       "Recent youth campaign launches signal active marketing budget and timing.",
@@ -134,10 +122,10 @@ export const agents: Agent[] = [
     name: "Outreach",
     role: "Writes personalized, on-brand outreach for every qualified contact.",
     status: "ACTIVE",
-    headline: `${outreachSent} messages generated`,
-    tasksCompleted: 102,
+    headline: "Messages generated",
+    tasksCompleted: 0,
     metricLabel: "Messages generated",
-    metricValue: String(outreachSent),
+    metricValue: "0",
     recentActivity: outreachActivity,
     reasoningExamples: [
       "Never sends generic messages — always references specific company research.",
@@ -150,10 +138,10 @@ export const agents: Agent[] = [
     name: "Conversation Manager",
     role: "Classifies incoming replies and recommends the next action.",
     status: "WAITING",
-    headline: `${conversations.length} conversations tracked`,
-    tasksCompleted: 88,
+    headline: "Conversations tracked",
+    tasksCompleted: 0,
     metricLabel: "Conversations tracked",
-    metricValue: String(conversations.length),
+    metricValue: "0",
     recentActivity: conversationActivity,
     reasoningExamples: [
       "'Can you send more information' classifies as NEEDS_INFORMATION, not INTERESTED.",
@@ -166,10 +154,10 @@ export const agents: Agent[] = [
     name: "Booking Agent",
     role: "Detects buying intent and schedules qualified meetings.",
     status: "RUNNING",
-    headline: `${qualifiedMeetings} qualified`,
-    tasksCompleted: 34,
+    headline: "Meetings qualified",
+    tasksCompleted: 0,
     metricLabel: "Meetings booked",
-    metricValue: String(qualifiedMeetings),
+    metricValue: "0",
     recentActivity: bookingActivity,
     reasoningExamples: [
       "Phrases like 'let's discuss' or 'send a proposal' trigger qualification.",
@@ -182,10 +170,10 @@ export const agents: Agent[] = [
     name: "Content Agent",
     role: "Turns event activity into a content calendar across platforms.",
     status: "ACTIVE",
-    headline: `${contentOpportunities.length} content ideas`,
-    tasksCompleted: 57,
+    headline: "Content ideas",
+    tasksCompleted: 0,
     metricLabel: "Content ideas",
-    metricValue: String(contentOpportunities.length),
+    metricValue: "0",
     recentActivity: contentActivity,
     reasoningExamples: [
       "Every player win becomes a short-form clip within the same content cycle.",

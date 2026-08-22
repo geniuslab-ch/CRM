@@ -12,8 +12,9 @@ import {
   deleteEvent,
   toggleEventChecklistItem,
   addEventChecklistItem,
+  addEventChecklistItems,
 } from "./repository";
-import { ContentOpportunity, ContentStatus } from "@/types";
+import { Contact, ContentOpportunity, ContentStatus } from "@/types";
 
 export async function markConversationAsRead(relatedId: string): Promise<void> {
   await markConversationRead(relatedId);
@@ -54,6 +55,36 @@ function numOrNull(formData: FormData, key: string): number | null {
   if (!raw) return null;
   const v = Number(raw);
   return Number.isFinite(v) ? v : null;
+}
+
+// Reads up to 3 contacts (contactName0/contactEmail0[/contactRole0] ..2)
+// plus which slot is marked primary (primaryContact, 0-2). A slot with
+// neither name nor email is skipped rather than saved empty; if the
+// marked-primary slot ended up empty, the first real contact wins
+// instead so there's always exactly one primary when any exist.
+function readContacts(formData: FormData, withRole: boolean): Contact[] {
+  const primarySlot = num(formData, "primaryContact", 0);
+  const contacts: Contact[] = [];
+  let primaryFound = false;
+  for (let i = 0; i < 3; i++) {
+    const name = str(formData, `contactName${i}`);
+    const email = str(formData, `contactEmail${i}`);
+    if (!name && !email) continue;
+    const isPrimary = i === primarySlot;
+    if (isPrimary) primaryFound = true;
+    contacts.push({
+      name,
+      email,
+      ...(withRole ? { role: str(formData, `contactRole${i}`) || undefined } : {}),
+      isPrimary,
+    });
+  }
+  if (contacts.length > 0 && !primaryFound) contacts[0].isPrimary = true;
+  return contacts;
+}
+
+function primaryOf(contacts: Contact[]): Contact | null {
+  return contacts.find((c) => c.isPrimary) ?? contacts[0] ?? null;
 }
 
 export async function addPlayer(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -124,10 +155,10 @@ export async function addClub(_prevState: ActionResult, formData: FormData): Pro
 
   const name = str(formData, "name");
   const city = str(formData, "city");
-  const contactName = str(formData, "contactName");
-  const contactEmail = str(formData, "contactEmail");
-  if (!name || !city || !contactName || !contactEmail) {
-    return { ok: false, error: "Club name, city, contact name and contact email are required." };
+  const contacts = readContacts(formData, false);
+  const primary = primaryOf(contacts);
+  if (!name || !city || !primary?.name || !primary?.email) {
+    return { ok: false, error: "Club name, city, and at least one contact name and email are required." };
   }
 
   const id = `club-${crypto.randomUUID()}`;
@@ -137,8 +168,9 @@ export async function addClub(_prevState: ActionResult, formData: FormData): Pro
       id,
       name,
       city,
-      contact_name: contactName,
-      contact_email: contactEmail,
+      contact_name: primary.name,
+      contact_email: primary.email,
+      contacts,
       website: str(formData, "website") || "",
       players_identified: num(formData, "playersIdentified", 0),
       status: "IDENTIFIED",
@@ -160,11 +192,11 @@ export async function updateClub(_prevState: ActionResult, formData: FormData): 
   const id = str(formData, "id");
   const name = str(formData, "name");
   const city = str(formData, "city");
-  const contactName = str(formData, "contactName");
-  const contactEmail = str(formData, "contactEmail");
+  const contacts = readContacts(formData, false);
+  const primary = primaryOf(contacts);
   if (!id) return { ok: false, error: "Missing club id." };
-  if (!name || !city || !contactName || !contactEmail) {
-    return { ok: false, error: "Club name, city, contact name and contact email are required." };
+  if (!name || !city || !primary?.name || !primary?.email) {
+    return { ok: false, error: "Club name, city, and at least one contact name and email are required." };
   }
 
   const { error } = await getSupabaseServerClient()
@@ -172,8 +204,9 @@ export async function updateClub(_prevState: ActionResult, formData: FormData): 
     .update({
       name,
       city,
-      contact_name: contactName,
-      contact_email: contactEmail,
+      contact_name: primary.name,
+      contact_email: primary.email,
+      contacts,
       website: str(formData, "website") || "",
       players_identified: num(formData, "playersIdentified", 0),
       status: str(formData, "status") || "IDENTIFIED",
@@ -203,10 +236,10 @@ export async function addSponsor(_prevState: ActionResult, formData: FormData): 
   const name = str(formData, "name");
   const category = str(formData, "category");
   const city = str(formData, "city");
-  const contactName = str(formData, "contactName");
-  const contactEmail = str(formData, "contactEmail");
-  if (!name || !category || !city || !contactName || !contactEmail) {
-    return { ok: false, error: "Company name, category, city, contact name and contact email are required." };
+  const contacts = readContacts(formData, true);
+  const primary = primaryOf(contacts);
+  if (!name || !category || !city || !primary?.name || !primary?.email) {
+    return { ok: false, error: "Company name, category, city, and at least one contact name and email are required." };
   }
 
   const id = `sponsor-${crypto.randomUUID()}`;
@@ -243,11 +276,12 @@ export async function addSponsor(_prevState: ActionResult, formData: FormData): 
         activationOpportunities: [],
         suggestedPackage: "TBD",
         contactPerson: {
-          name: contactName,
-          role: str(formData, "contactRole") || "Contact",
-          email: contactEmail,
+          name: primary.name,
+          role: primary.role || "Contact",
+          email: primary.email,
         },
       },
+      contacts,
       ai_recommendation: "Newly added — not yet scored.",
     });
 
@@ -264,11 +298,11 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
   const name = str(formData, "name");
   const category = str(formData, "category");
   const city = str(formData, "city");
-  const contactName = str(formData, "contactName");
-  const contactEmail = str(formData, "contactEmail");
+  const contacts = readContacts(formData, true);
+  const primary = primaryOf(contacts);
   if (!id) return { ok: false, error: "Missing sponsor id." };
-  if (!name || !category || !city || !contactName || !contactEmail) {
-    return { ok: false, error: "Company name, category, city, contact name and contact email are required." };
+  if (!name || !category || !city || !primary?.name || !primary?.email) {
+    return { ok: false, error: "Company name, category, city, and at least one contact name and email are required." };
   }
 
   const supabase = getSupabaseServerClient();
@@ -285,9 +319,9 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
     ...existingResearch,
     ...(description ? { companyDescription: description } : {}),
     contactPerson: {
-      name: contactName,
-      role: str(formData, "contactRole") || "Contact",
-      email: contactEmail,
+      name: primary.name,
+      role: primary.role || "Contact",
+      email: primary.email,
     },
   };
 
@@ -297,6 +331,7 @@ export async function updateSponsor(_prevState: ActionResult, formData: FormData
   const { error } = await supabase
     .from("sponsors")
     .update({
+      contacts,
       name,
       category,
       city,
@@ -429,6 +464,15 @@ export async function addChecklistItem(eventId: string, label: string): Promise<
   if (guard) return guard;
   if (!label.trim()) return { ok: false, error: "Checklist item can't be empty." };
   const result = await addEventChecklistItem(eventId, label.trim());
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/event");
+  return { ok: true };
+}
+
+export async function seedEventChecklist(eventId: string, labels: string[]): Promise<ActionResult> {
+  const guard = requireSupabase();
+  if (guard) return guard;
+  const result = await addEventChecklistItems(eventId, labels);
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/event");
   return { ok: true };

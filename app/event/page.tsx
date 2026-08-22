@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
 import { DataSourceBadge } from "@/components/ui/data-source-badge";
-import { EventChecklist } from "@/components/event/checklist";
+import { EventChecklistPanel } from "@/components/event/checklist-panel";
 import { AddEventDialog } from "@/components/event/add-event-dialog";
 import { EditEventDialog } from "@/components/event/edit-event-dialog";
 import { DeleteEventButton } from "@/components/event/delete-event-button";
@@ -42,7 +42,7 @@ export default async function EventPage() {
       )}
 
       {primary && <PrimaryEventCard event={primary} />}
-      {primary && <EventChecklist eventId={primary.id} items={primary.checklist} />}
+      {events.length > 0 && <EventChecklistPanel events={events} defaultEventId={(primary ?? events[0]).id} />}
 
       {others.length > 0 && (
         <div>

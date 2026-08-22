@@ -18,6 +18,7 @@ export function SponsorWorkspace({ sponsor }: { sponsor: Sponsor }) {
       <ProposalGenerator sponsor={sponsor} onTierChange={setProposalTier} />
       <BookingWidget
         contactName={sponsor.research.contactPerson.name}
+        contactEmail={sponsor.research.contactPerson.email}
         organization={sponsor.name}
         category="SPONSOR"
         relatedId={sponsor.id}
