@@ -33,9 +33,22 @@ export class MockEmailProvider implements EmailProvider {
   }
 }
 
+// Email headers must be plain ASCII (RFC 5322) — a subject with any
+// non-ASCII character (accents, em dashes, umlauts...) has to be wrapped
+// in an RFC 2047 encoded-word or mail clients render it as mojibake.
+// The body doesn't need this: its charset is declared separately via the
+// Content-Type header, which the raw header bytes can't carry.
+function encodeSubject(subject: string): string {
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x00-\x7F]*$/.test(subject)) return subject;
+  return `=?UTF-8?B?${Buffer.from(subject, "utf-8").toString("base64")}?=`;
+}
+
 function encodeMessage(to: string, subject: string, body: string, attachment?: EmailAttachment): string {
+  const encodedSubject = encodeSubject(subject);
+
   if (!attachment) {
-    const message = [`To: ${to}`, `Subject: ${subject}`, "Content-Type: text/plain; charset=utf-8", "", body].join(
+    const message = [`To: ${to}`, `Subject: ${encodedSubject}`, "Content-Type: text/plain; charset=utf-8", "", body].join(
       "\n"
     );
     return Buffer.from(message).toString("base64url");
@@ -44,7 +57,7 @@ function encodeMessage(to: string, subject: string, body: string, attachment?: E
   const boundary = `panna-${Date.now().toString(36)}`;
   const parts = [
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodedSubject}`,
     "MIME-Version: 1.0",
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     "",

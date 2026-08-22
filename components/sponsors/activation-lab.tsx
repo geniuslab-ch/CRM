@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { generateProposalTier } from "@/lib/data/proposals";
 import { ActivationConcept, Sponsor, SponsorshipTier } from "@/types";
 
 const PLACEHOLDER_EMAIL_HINT = /\.example\.[a-z]+$/i;
@@ -79,6 +80,11 @@ export function ActivationLab({ sponsor, proposalTier }: { sponsor: Sponsor; pro
 
   const contactEmail = sponsor.research.contactPerson.email;
   const isPlaceholderEmail = PLACEHOLDER_EMAIL_HINT.test(contactEmail);
+  // The formal proposal tier only exists once the user opens the Commercial
+  // Opportunity Generator below. Attaching a PDF shouldn't require that
+  // extra step first, so fall back to the same deterministic default tier
+  // that generator would compute on its own.
+  const effectiveTier = proposalTier ?? generateProposalTier(sponsor);
 
   async function callActivation(direction?: Direction) {
     if (direction) setTransformLoading(direction);
@@ -140,7 +146,7 @@ export function ActivationLab({ sponsor, proposalTier }: { sponsor: Sponsor; pro
             category: "SPONSOR",
             relatedId: sponsor.id,
           },
-          ...(attachProposal && proposalTier ? { attachProposal: { sponsor, tier: proposalTier } } : {}),
+          ...(attachProposal ? { attachProposal: { sponsor, tier: effectiveTier } } : {}),
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Send failed");
@@ -297,7 +303,7 @@ export function ActivationLab({ sponsor, proposalTier }: { sponsor: Sponsor; pro
                       sending for real.
                     </div>
                   )}
-                  {proposalTier && !sentVia && (
+                  {!sentVia && (
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <input
                         type="checkbox"
