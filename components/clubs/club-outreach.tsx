@@ -34,7 +34,8 @@ export function ClubOutreach({ club }: { club: Club }) {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sentVia, setSentVia] = useState<{ mock: boolean } | null>(null);
 
-  const isPlaceholderEmail = PLACEHOLDER_EMAIL_HINT.test(club.contactEmail);
+  const hasNoEmail = !club.contactEmail.trim();
+  const isPlaceholderEmail = !hasNoEmail && PLACEHOLDER_EMAIL_HINT.test(club.contactEmail);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -221,9 +222,17 @@ export function ClubOutreach({ club }: { club: Club }) {
                 {generating ? "Writing…" : "Regenerate"}
               </Button>
 
-              <p className="text-xs text-muted-foreground">
-                Will send to <span className="font-medium text-foreground">{club.contactEmail}</span>
-              </p>
+              {!hasNoEmail && (
+                <p className="text-xs text-muted-foreground">
+                  Will send to <span className="font-medium text-foreground">{club.contactEmail}</span>
+                </p>
+              )}
+              {hasNoEmail && !sentVia && (
+                <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  No email on file for this club yet — use Edit to add one before sending.
+                </div>
+              )}
               {isPlaceholderEmail && !sentVia && (
                 <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -249,7 +258,7 @@ export function ClubOutreach({ club }: { club: Club }) {
                   {sentVia.mock ? "Sent (mock — no email configured)" : "Sent"}
                 </div>
               ) : (
-                <Button size="sm" onClick={handleSend} disabled={sending}>
+                <Button size="sm" onClick={handleSend} disabled={sending || hasNoEmail}>
                   <Send className="h-3.5 w-3.5" aria-hidden="true" />
                   {sending ? "Sending…" : "Send"}
                 </Button>
