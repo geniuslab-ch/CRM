@@ -87,9 +87,10 @@ export default function SettingsPage() {
             The whole app is gated by a single switch: set{" "}
             <code className="rounded bg-surface-2 px-1.5 py-0.5">ANTHROPIC_API_KEY</code> in your environment and
             redeploy to go live. It powers reply classification, content idea generation, real web-search
-            prospecting (Run AI Team), the Researcher agent and the AI Activation Lab. Without it, classification and
-            content ideas fall back to a clearly-labeled Mock AI, and the prospecting/research/activation features
-            are disabled outright rather than faked — see the sidebar status below.
+            prospecting (Run AI Team), the Researcher agent, the AI Activation Lab and the Club Challenge Email
+            generator. Without it, classification and content ideas fall back to a clearly-labeled Mock AI, and the
+            prospecting/research/activation/club-email features are disabled outright rather than faked — see the
+            sidebar status below.
           </p>
         </CardContent>
       </Card>
