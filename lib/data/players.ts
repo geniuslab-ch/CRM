@@ -143,6 +143,7 @@ export function generatePlayers(count = 50): Player[] {
       signupNote: null,
       signupSource: null,
       positionNote: null,
+      nominatedBy: null,
     });
   }
 

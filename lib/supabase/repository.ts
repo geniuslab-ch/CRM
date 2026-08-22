@@ -51,6 +51,7 @@ function rowToPlayer(row: any): Player {
     signupNote: row.signup_note ?? null,
     signupSource: row.signup_source ?? null,
     positionNote: row.position_note ?? null,
+    nominatedBy: row.nominated_by ?? null,
   };
 }
 
@@ -68,6 +69,12 @@ function rowToClub(row: any): Club {
     lastContact: row.last_contact,
     engagementType: row.engagement_type,
     aiNote: row.ai_note,
+    contactPhone: row.contact_phone ?? null,
+    organisationType: row.organisation_type ?? null,
+    instagram: row.instagram ?? null,
+    tiktok: row.tiktok ?? null,
+    inquiryMessage: row.inquiry_message ?? null,
+    signupSource: row.signup_source ?? null,
   };
 }
 
@@ -453,6 +460,7 @@ export interface PlayerSignup {
   instagram: string | null;
   tiktok: string | null;
   source: string; // which public form/channel, e.g. "site-register", "signal:lausanne01"
+  nominatedBy: string | null; // "Name (contact)" of the friend who nominated this player, when applicable
 }
 
 function ageFromGroup(group: string | null): number {
@@ -510,8 +518,10 @@ export async function createPlayerFromSignup(s: PlayerSignup): Promise<{ ok: boo
       social_audience: 0,
       status: "IDENTIFIED",
       last_contact: null,
-      ai_recommendation: "Public signup via the Panna League website — not yet reviewed by the Player Recruiter agent.",
-      ai_why: s.note || "Applied directly through the public registration form.",
+      ai_recommendation: s.nominatedBy
+        ? "Nominated by a friend via the Panna League Signal campaign — not yet reviewed by the Player Recruiter agent."
+        : "Public signup via the Panna League website — not yet reviewed by the Player Recruiter agent.",
+      ai_why: s.note || (s.nominatedBy ? "Nominated by a friend — no reason given." : "Applied directly through the public registration form."),
       avatar_seed: id,
       age_group: s.ageGroup,
       contact_email: s.contactEmail,
@@ -521,6 +531,50 @@ export async function createPlayerFromSignup(s: PlayerSignup): Promise<{ ok: boo
       signup_note: s.note,
       signup_source: s.source,
       position_note: s.positionRaw,
+      nominated_by: s.nominatedBy,
+    });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// ── Club partnership signups ────────────────────────────────
+
+export interface ClubSignup {
+  contactName: string; // the person filling out the form
+  organisation: string; // club/academy/venue name
+  organisationType: string | null;
+  contactEmail: string;
+  contactPhone: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  message: string | null;
+  source: string;
+}
+
+export async function createClubFromSignup(s: ClubSignup): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+  const id = `club-${crypto.randomUUID()}`;
+  const { error } = await getSupabaseServerClient()
+    .from("clubs")
+    .insert({
+      id,
+      name: s.organisation,
+      city: "Not provided",
+      contact_name: s.contactName,
+      contact_email: s.contactEmail,
+      website: "",
+      players_identified: 0,
+      status: "IDENTIFIED",
+      potential: "MEDIUM",
+      last_contact: null,
+      engagement_type: "PLAYER_RECRUITMENT",
+      ai_note: "Public partnership inquiry via the Panna League website — not yet reviewed.",
+      contact_phone: s.contactPhone,
+      organisation_type: s.organisationType,
+      instagram: s.instagram,
+      tiktok: s.tiktok,
+      inquiry_message: s.message,
+      signup_source: s.source,
     });
   if (error) return { ok: false, error: error.message };
   return { ok: true };

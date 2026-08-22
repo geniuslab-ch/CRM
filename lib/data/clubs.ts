@@ -61,6 +61,12 @@ export function generateClubs(count = 20): Club[] {
           : status === "CONFIRMED"
           ? "Players confirmed for the roster. Commercial conversation not yet opened."
           : "Full club partner — commercial + player pipeline both active.",
+      contactPhone: null,
+      organisationType: null,
+      instagram: null,
+      tiktok: null,
+      inquiryMessage: null,
+      signupSource: null,
     });
   }
 

@@ -61,6 +61,7 @@ export interface Player {
   signupNote: string | null; // "why should I be selected" free text
   signupSource: string | null; // which public form/channel, e.g. "site-register", "signal:lausanne01"
   positionNote: string | null; // raw free-text position when it didn't cleanly map to the enum above
+  nominatedBy: string | null; // "Name (contact)" of the friend who nominated this player, when applicable
 }
 
 // ── Clubs ───────────────────────────────────────────────────
@@ -88,6 +89,14 @@ export interface Club {
   lastContact: string | null;
   engagementType: "PLAYER_RECRUITMENT" | "COMMERCIAL_PARTNERSHIP" | "BOTH";
   aiNote: string;
+  // Public signup fields — populated only for real partnership-form
+  // submissions from the marketing site, null otherwise.
+  contactPhone: string | null;
+  organisationType: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  inquiryMessage: string | null;
+  signupSource: string | null;
 }
 
 // ── Sponsors ────────────────────────────────────────────────

@@ -25,12 +25,13 @@ create table if not exists players (
   tiktok text,
   signup_note text,
   signup_source text,
-  position_note text
+  position_note text,
+  nominated_by text
 );
 
 -- Safe to run against an already-created players table too — adds the
 -- columns the public signup endpoint (app/api/public/player-signup)
--- writes to for real player-form / signal-campaign submissions.
+-- writes to for real player-form / signal-campaign / nomination submissions.
 alter table players add column if not exists age_group text;
 alter table players add column if not exists contact_email text;
 alter table players add column if not exists contact_phone text;
@@ -39,6 +40,7 @@ alter table players add column if not exists tiktok text;
 alter table players add column if not exists signup_note text;
 alter table players add column if not exists signup_source text;
 alter table players add column if not exists position_note text;
+alter table players add column if not exists nominated_by text;
 
 create table if not exists clubs (
   id text primary key,
@@ -53,8 +55,24 @@ create table if not exists clubs (
   last_contact timestamptz,
   engagement_type text not null,
   ai_note text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  contact_phone text,
+  organisation_type text,
+  instagram text,
+  tiktok text,
+  inquiry_message text,
+  signup_source text
 );
+
+-- Safe to run against an already-created clubs table too — adds the
+-- columns the public signup endpoint (app/api/public/club-signup)
+-- writes to for real partnership-form submissions.
+alter table clubs add column if not exists contact_phone text;
+alter table clubs add column if not exists organisation_type text;
+alter table clubs add column if not exists instagram text;
+alter table clubs add column if not exists tiktok text;
+alter table clubs add column if not exists inquiry_message text;
+alter table clubs add column if not exists signup_source text;
 
 create table if not exists sponsors (
   id text primary key,
